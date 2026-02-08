@@ -1,0 +1,63 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### Spring ###
+build/
+out/
+
+### Python / FastAPI ###
+__pycache__/
+*.py[cod]
+*.pyo
+
+### Virtual environments ###
+.venv/
+venv/
+env/
+
+### Environment variables ###
+.env
+.env.*
+
+### Python build ###
+dist/
+build/
+*.egg-info/
+
+### Jupyter ###
+.ipynb_checkpoints/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/

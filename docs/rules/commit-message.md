@@ -28,3 +28,13 @@
 - 제목과 본문 사이에 빈 줄을 추가하여 구분
 - 각 행은 72자 이내로 작성
 - "무엇"을 "왜" 변경했는지 설명한다. "어떻게" 변경했는지는 코드에서 드러나므로 설명하지 않아도 된다.
+
+### 5. 예시
+
+ 
+
+```jsx
+docs : Add commit message rules
+
+- Add commit message type 'build'
+```

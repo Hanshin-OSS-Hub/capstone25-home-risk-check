@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+logs/
+*.log
+
+# Java / Spring
+*.class
+target/
+build/
+.gradle/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Env
+.env

@@ -1,7 +1,7 @@
 # 브랜치 전략
 ## Github Flow
 
-![img.png](../../assets/image/githubflow.png)
+![img.png](../../assets/convention/githubflow.png)
 
 ##### Github Flow는 간단하고 직관적인 브랜치 전략으로, 다음과 같은 단계를 포함:  
 1. **메인 브랜치(Main Branch)**: `main` 브랜치는 항상 배포 가능한 상태를 유지. 모든 새로운 기능이나 수정 사항은 이 브랜치에서 분기된 별도의 브랜치에서 작업해야 함.

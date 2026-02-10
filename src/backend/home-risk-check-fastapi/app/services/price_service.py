@@ -230,18 +230,18 @@ def get_trade_price(
     }
 
     if area_size:
-        area_condition = "AND CAST(전용면적 AS DECIMAL(10,2)) BETWEEN :area - 3 AND :area + 3"
+        area_condition = "AND CAST(exclusive_area AS DECIMAL(10,2)) BETWEEN :area - 3 AND :area + 3"
         params["area"] = area_size
 
     query = text(f"""
-        SELECT 거래금액 as price 
+        SELECT trade_price as price 
         FROM raw_trade 
-        WHERE 시군구 = :sigungu 
-          AND 법정동 = :bjdong 
-          AND 본번 = :bonbun 
-          AND 부번 = :bubun
+        WHERE district = :sigungu 
+          AND legal_dong = :bjdong 
+          AND main_jibun = :bonbun 
+          AND sub_jibun = :bubun
           {area_condition}
-        ORDER BY 계약일 DESC 
+        ORDER BY contract_date DESC 
         LIMIT 1
     """)
 
@@ -305,19 +305,19 @@ def get_rent_price(
     }
 
     if area_size:
-        area_condition = "AND CAST(전용면적 AS DECIMAL(10,2)) BETWEEN :area - 3 AND :area + 3"
+        area_condition = "AND CAST(exclusive_area AS DECIMAL(10,2)) BETWEEN :area - 3 AND :area + 3"
         params["area"] = area_size
 
     query = text(f"""
-        SELECT 보증금 as deposit
+        SELECT deposit as deposit
         FROM raw_rent 
-        WHERE 시군구 = :sigungu 
-          AND 법정동 = :bjdong 
-          AND 본번 = :bonbun 
-          AND 부번 = :bubun
-          AND (월세 = '0' OR 월세 = '' OR 월세 IS NULL)
+        WHERE district = :sigungu 
+          AND legal_dong = :bjdong 
+          AND main_jibun = :bonbun 
+          AND sub_jibun = :bubun
+          AND (monthly_rent = '0' OR monthly_rent = '' OR monthly_rent IS NULL)
           {area_condition}
-        ORDER BY 계약일 DESC 
+        ORDER BY contract_date DESC 
         LIMIT 1
     """)
 

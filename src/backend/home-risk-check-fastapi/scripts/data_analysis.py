@@ -32,13 +32,13 @@ def run_debug_analysis():
     sql_rent = """
         SELECT 
             시군구, 법정동, 본번, 부번,
-            보증금 as rent_price, 
-            전용면적 as rent_area,
-            건물명 as rent_bldg_name,  -- [확인용] 전세 계약서상 건물명
-            건물유형 as rent_type,     -- [확인용] 아파트/단독다가구 등
-            계약일 as contract_date
+            deposit as rent_price, 
+            exclusive_area as rent_area,
+            building_name as rent_bldg_name,  -- [확인용] 전세 계약서상 building_name
+            building_type as rent_type,     -- [확인용] 아파트/단독다가구 등
+            contract_date as contract_date
         FROM raw_rent
-        WHERE 월세 = 0 AND 계약일 >= '20230101'
+        WHERE monthly_rent = 0 AND contract_date >= '20230101'
     """
 
     # (2) 건축물대장 (주용도, 면적 포함)
@@ -66,7 +66,7 @@ def run_debug_analysis():
     # ---------------------------------------------------------
     print(">> 2. 키 생성 및 병합 시도...")
 
-    col_map = {'sgg': '시군구', 'bjd': '법정동', 'bon': '본번', 'bu': '부번'}
+    col_map = {'sgg': 'district', 'bjd': 'legal_dong', 'bon': 'main_jibun', 'bu': 'sub_jibun'}
     df_rent['key'] = df_rent.apply(lambda row: _create_join_key_robust(row, col_map), axis=1)
     df_build['key'] = df_build['unique_number'].apply(_generate_key_from_pnu)
 

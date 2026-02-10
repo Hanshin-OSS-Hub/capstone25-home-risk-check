@@ -114,17 +114,17 @@ def parse_trade_xml_to_df(xml_text: str, code_map: dict, building_type: str) -> 
             continue  # 매핑 실패한 데이터는 저장하지 않음
 
         record = {
-            '시군구': sgg_code,
-            '법정동': bjdong_code,
-            '본번': bonbeon,
-            '부번': bubeon,
-            '거래금액': deal_amount,
-            '계약일': deal_date,
-            '전용면적': item.findtext('excluUseAr'),
-            '층': item.findtext('floor'),
-            '건물명': item.findtext(name_tag),
-            '건축년도': item.findtext('buildYear'),
-            '건물유형': building_type
+            'district': sgg_code,
+            'legal_dong': bjdong_code,
+            'main_jibun': bonbeon,
+            'sub_jibun': bubeon,
+            'trade_price': deal_amount,
+            'contract_date': deal_date,
+            'exclusive_area': item.findtext('excluUseAr'),
+            'floor': item.findtext('floor'),
+            'building_name': item.findtext(name_tag),
+            'construction_year': item.findtext('buildYear'),
+            'building_type': building_type
         }
         records.append(record)
     return pd.DataFrame(records)

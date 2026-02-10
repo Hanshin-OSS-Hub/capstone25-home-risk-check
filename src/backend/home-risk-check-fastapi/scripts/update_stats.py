@@ -31,14 +31,14 @@ def update_regional_stats():
 
     # (1) 전세 데이터 (월세가 0인 것만) - 건물유형 포함
     sql_rent = """
-        SELECT 시군구, 법정동, 본번, 부번, 보증금, 계약일, 건물명, 건물유형
+        SELECT district, legal_dong, main_jibun, sub_jibun, deposit, contract_date, building_name, building_type
         FROM raw_rent 
-        WHERE 월세 = '0' OR 월세 IS NULL
+        WHERE monthly_rent = '0' OR monthly_rent IS NULL
     """
 
     # (2) 매매 데이터
     sql_trade = """
-        SELECT 시군구, 법정동, 본번, 부번, 거래금액, 계약일
+        SELECT district, legal_dong, main_jibun, sub_jibun, trade_price, contract_date
         FROM raw_trade 
     """
 
@@ -56,19 +56,19 @@ def update_regional_stats():
     print("   ㄴ 2. 데이터 전처리 및 병합 중...")
 
     # (1) 금액 컬럼 숫자 변환 (콤마 제거)
-    df_rent['deposit'] = pd.to_numeric(df_rent['보증금'].str.replace(',', ''), errors='coerce')
-    df_trade['price'] = pd.to_numeric(df_trade['거래금액'].str.replace(',', ''), errors='coerce')
+    df_rent['deposit'] = pd.to_numeric(df_rent['deposit'].str.replace(',', ''), errors='coerce')
+    df_trade['price'] = pd.to_numeric(df_trade['trade_price'].str.replace(',', ''), errors='coerce')
 
     # (2) 날짜 변환 (YYYYMMDD -> datetime)
-    df_rent['date'] = pd.to_datetime(df_rent['계약일'], format='%Y%m%d', errors='coerce')
-    df_trade['date'] = pd.to_datetime(df_trade['계약일'], format='%Y%m%d', errors='coerce')
+    df_rent['date'] = pd.to_datetime(df_rent['contract_date'], format='%Y%m%d', errors='coerce')
+    df_trade['date'] = pd.to_datetime(df_trade['contract_date'], format='%Y%m%d', errors='coerce')
 
     # (3) 건물유형 분류
-    df_rent['building_type'] = df_rent['건물유형'].apply(categorize_building_type)
+    df_rent['building_type'] = df_rent['building_type'].apply(categorize_building_type)
 
     # (4) 고유 키 생성 (시군구+법정동+본번+부번)
     def make_key(row):
-        return f"{str(row['시군구'])}-{str(row['법정동'])}-{str(row['본번'])}-{str(row['부번'])}"
+        return f"{str(row['district'])}-{str(row['legal_dong'])}-{str(row['main_jibun'])}-{str(row['sub_jibun'])}"
 
     df_rent['key'] = df_rent.apply(make_key, axis=1)
     df_trade['key'] = df_trade.apply(make_key, axis=1)
@@ -105,14 +105,14 @@ def update_regional_stats():
     print("   ㄴ 3. 통계 집계 중...")
 
     # (A) 전체 통계 (기존 방식)
-    stats_all = df_final.groupby(['시군구', 'month']).agg(
+    stats_all = df_final.groupby(['district', 'month']).agg(
         avg_ratio=('ratio', 'mean'),
         tx_count=('ratio', 'count')
     ).reset_index()
     stats_all['building_type'] = 'ALL'  # 전체 표시
 
     # (B) 건물유형별 통계 (신규)
-    stats_by_type = df_final.groupby(['시군구', 'month', 'building_type']).agg(
+    stats_by_type = df_final.groupby(['district', 'month', 'building_type']).agg(
         avg_ratio=('ratio', 'mean'),
         tx_count=('ratio', 'count')
     ).reset_index()
@@ -132,7 +132,7 @@ def update_regional_stats():
 
     # 컬럼명 DB 포맷에 맞게 변경
     stats.rename(columns={
-        '시군구': 'region_code',
+        'district': 'region_code',
     }, inplace=True)
 
     # 지역명은 임시로 코드 사용

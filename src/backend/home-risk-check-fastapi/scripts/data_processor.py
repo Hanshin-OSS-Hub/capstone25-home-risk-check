@@ -25,7 +25,7 @@ def _estimate_market_price_row(row):
     return np.nan
 
 # --- 1. 헬퍼 함수 (키 생성) ---
-def _create_join_key_from_columns(row, keys=['시군구', '법정동', '본번', '부번']):
+def _create_join_key_from_columns(row, keys=['district', 'legal_dong', 'main_jibun', 'sub_jibun']):
     """
     raw_rent, raw_trade 테이블용 키 생성 함수
     입력: 컬럼이 분리된 데이터
@@ -190,36 +190,36 @@ def load_and_engineer_features() -> pd.DataFrame:
 
     # 1-1. 전세/월세 실거래가 (Target & Input)
     SQL_RENT = """
-               SELECT 시군구, \
+               SELECT district, \
                       법정동, \
                       본번, \
                       부번, \
-                      보증금 AS RENT_PRICE, \
-                      월세  AS MONTHLY_RENT, \
-                      계약일 AS CONTRACT_DATE, \
-                      건물유형 AS BUILDING_TYPE, \
-                      층 AS FLOOR, \
-                      전용면적 AS AREA, \
-                      건물명 AS BUILDING_NAME, \
-                      건축년도 AS BUILDING_YEAR
+                      deposit AS RENT_PRICE, \
+                      monthly_rent  AS MONTHLY_RENT, \
+                      contract_date AS CONTRACT_DATE, \
+                      building_type AS BUILDING_TYPE, \
+                      floor AS FLOOR, \
+                      exclusive_area AS AREA, \
+                      building_name AS BUILDING_NAME, \
+                      construction_year AS BUILDING_YEAR
                FROM raw_rent \
-               WHERE 월세 = 0
-                 AND 계약일 >= '20230101' -- 최근 2년 데이터만 사용
+               WHERE monthly_rent = 0
+                 AND contract_date >= '20230101' -- 최근 2년 데이터만 사용
                """
 
     # 1-2. 매매 실거래가 (Market Price Reference)
     SQL_TRADE = """
-                SELECT 시군구, \
+                SELECT district, \
                        법정동, \
                        본번, \
                        부번, \
-                       거래금액 AS TRADE_PRICE, \
-                       계약일  AS TRADE_DATE, \
-                       전용면적 AS AREA, \
-                       건축년도 AS BUILDING_AGE, \
-                       건물유형 AS BUILDING_TYPE
+                       trade_price AS TRADE_PRICE, \
+                       contract_date  AS TRADE_DATE, \
+                       exclusive_area AS AREA, \
+                       construction_year AS BUILDING_AGE, \
+                       building_type AS BUILDING_TYPE
                 FROM raw_trade \
-                WHERE 계약일 >= '20230101' -- 최근 2년 데이터만 사용
+                WHERE contract_date >= '20230101' -- 최근 2년 데이터만 사용
                 """
 
     # 1-3. 건축물대장 정보
@@ -285,7 +285,7 @@ def load_and_engineer_features() -> pd.DataFrame:
     df_building['ownership_changed_date'] = pd.to_datetime(df_building['ownership_changed_date'], errors='coerce')
 
     # 키 생성 (개선된 함수 사용)
-    col_map = {'sgg': '시군구', 'bjd': '법정동', 'bon': '본번', 'bu': '부번'}
+    col_map = {'sgg': 'district', 'bjd': 'legal_dong', 'bon': 'main_jibun', 'bu': 'sub_jibun'}
     df_rent['key'] = df_rent.apply(lambda row: _create_join_key_from_columns(row), axis=1)
     df_trade['key'] = df_trade.apply(lambda row: _create_join_key_from_columns(row), axis=1)
     df_building['key'] = df_building['unique_number'].apply(_create_join_key_from_unique_no)

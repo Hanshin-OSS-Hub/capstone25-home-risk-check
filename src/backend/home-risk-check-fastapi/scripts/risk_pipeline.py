@@ -66,19 +66,19 @@ def run_risk_analysis_pipeline():
 
     # 2. 전세 실거래가
     sql_rent = """
-        SELECT 시군구, 법정동, 본번, 부번, 
-               보증금 as rent_price, 계약일 as contract_date, 
-               전용면적 as rent_area
+        SELECT district, legal_dong, main_jibun, sub_jibun, 
+               deposit as rent_price, contract_date as contract_date, 
+               exclusive_area as rent_area
         FROM raw_rent
-        WHERE 월세 = 0 AND 계약일 >= '20230101'
+        WHERE monthly_rent = 0 AND contract_date >= '20230101'
     """
 
     # 3. 매매 실거래가
     sql_trade = """
-        SELECT 시군구, 법정동, 본번, 부번, 
-               거래금액 as trade_price, 계약일 as trade_date
+        SELECT district, legal_dong, main_jibun, sub_jibun, 
+               trade_price as trade_price, contract_date as trade_date
         FROM raw_trade
-        WHERE 계약일 >= '20230101'
+        WHERE contract_date >= '20230101'
     """
 
     # 4. 공시가격
@@ -109,7 +109,7 @@ def run_risk_analysis_pipeline():
     df_build['use_apr_day'] = pd.to_datetime(df_build['use_apr_day'], errors='coerce')
     df_build['ownership_changed_date'] = pd.to_datetime(df_build['ownership_changed_date'], errors='coerce')
 
-    col_map = {'sgg': '시군구', 'bjd': '법정동', 'bon': '본번', 'bu': '부번'}
+    col_map = {'sgg': 'district', 'bjd': 'legal_dong', 'bon': 'main_jibun', 'bu': 'sub_jibun'}
     df_rent['key'] = df_rent.apply(lambda row: _create_join_key_robust(row, col_map), axis=1)
     df_trade['key'] = df_trade.apply(lambda row: _create_join_key_robust(row, col_map), axis=1)
     df_build['key'] = df_build['unique_number'].apply(_generate_key_from_pnu)

@@ -410,27 +410,27 @@ def init_db():
             CREATE TABLE IF NOT EXISTS raw_rent (
                 id INT AUTO_INCREMENT PRIMARY KEY,
 
-                시군구 VARCHAR(50),
-                법정동 VARCHAR(50),
-                본번 VARCHAR(20),
-                부번 VARCHAR(20),
+                district VARCHAR(50),
+                legal_dong VARCHAR(50),
+                main_jibun VARCHAR(20),
+                sub_jibun VARCHAR(20),
 
-                보증금 VARCHAR(50),
-                월세 VARCHAR(50),
+                deposit VARCHAR(50),
+                monthly_rent VARCHAR(50),
 
-                계약일 VARCHAR(20),
-                계약유형 VARCHAR(20),
-                건물유형 VARCHAR(20),
+                contract_date VARCHAR(20),
+                contract_type VARCHAR(20),
+                building_type VARCHAR(20),
 
-                층 VARCHAR(20),
-                전용면적 VARCHAR(30),
-                건물명 VARCHAR(100),
-                건축년도 VARCHAR(10),
+                floor VARCHAR(20),
+                exclusive_area VARCHAR(30),
+                building_name VARCHAR(100),
+                construction_year VARCHAR(10),
 
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-                INDEX idx_rent_sigungu (시군구),
-                INDEX idx_rent_date (계약일)
+                INDEX idx_rent_sigungu (district),
+                INDEX idx_rent_date (contract_date)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """))
 
@@ -441,24 +441,24 @@ def init_db():
             CREATE TABLE IF NOT EXISTS raw_trade (
                 id INT AUTO_INCREMENT PRIMARY KEY,
 
-                시군구 VARCHAR(50),
-                법정동 VARCHAR(50),
-                본번 VARCHAR(20),
-                부번 VARCHAR(20),
+                district VARCHAR(50),
+                legal_dong VARCHAR(50),
+                main_jibun VARCHAR(20),
+                sub_jibun VARCHAR(20),
 
-                거래금액 VARCHAR(50),
-                계약일 VARCHAR(20),
+                trade_price VARCHAR(50),
+                contract_date VARCHAR(20),
 
-                전용면적 VARCHAR(30),
-                층 VARCHAR(20),
-                건물명 VARCHAR(100),
-                건축년도 VARCHAR(10),
-                건물유형 VARCHAR(20),
+                exclusive_area VARCHAR(30),
+                floor VARCHAR(20),
+                building_name VARCHAR(100),
+                construction_year VARCHAR(10),
+                building_type VARCHAR(20),
 
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-                INDEX idx_trade_sigungu (시군구),
-                INDEX idx_trade_date (계약일)
+                INDEX idx_trade_sigungu (district),
+                INDEX idx_trade_date (contract_date)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """))
 
@@ -467,8 +467,8 @@ def init_db():
         # -----------------------------------------------------
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS regions (
-                region_code VARCHAR(10) PRIMARY KEY COMMENT '시군구 코드',
-                region_name VARCHAR(50) NOT NULL COMMENT '시군구 명'
+                region_code VARCHAR(10) PRIMARY KEY COMMENT 'district 코드',
+                region_name VARCHAR(50) NOT NULL COMMENT 'district 명'
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """))
 

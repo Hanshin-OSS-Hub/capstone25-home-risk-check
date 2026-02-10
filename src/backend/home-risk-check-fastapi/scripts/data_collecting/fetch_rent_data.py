@@ -184,19 +184,19 @@ def parse_rent_xml_to_df(xml_text: str, code_map: dict, building_type: str) -> p
             continue
 
         record = {
-            '시군구': sgg_code,
-            '법정동': bjdong_code,
-            '본번': bonbeon,
-            '부번': bubeon,
-            '보증금': deposit_str,
-            '월세': rent_str,
-            '계약일': deal_date,
-            '계약유형': item.findtext('contractType', '').strip(),
-            '건물유형': building_type,
-            '층': floor_str,
-            '전용면적': item.findtext('excluUseAr', ''),
-            '건물명': item.findtext(name_tag, ''),
-            '건축년도': item.findtext('buildYear', '')
+            'district': sgg_code,
+            'legal_dong': bjdong_code,
+            'main_jibun': bonbeon,
+            'sub_jibun': bubeon,
+            'deposit': deposit_str,
+            'monthly_rent': rent_str,
+            'contract_date': deal_date,
+            'contract_type': item.findtext('contractType', '').strip(),
+            'building_type': building_type,
+            'floor': floor_str,
+            'exclusive_area': item.findtext('excluUseAr', ''),
+            'building_name': item.findtext(name_tag, ''),
+            'construction_year': item.findtext('buildYear', '')
         }
         records.append(record)
 

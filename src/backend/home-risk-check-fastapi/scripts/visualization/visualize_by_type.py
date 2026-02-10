@@ -100,18 +100,18 @@ def load_pure_market_data():
     print(">> 1. 실거래가(매매/전세) 데이터 로드 중...")
 
     sql_rent = """
-        SELECT 시군구, 법정동, 본번, 부번, 
-               보증금 as rent_price, 계약일 as contract_date, 
-               전용면적 as area, 건물유형 as building_type
+        SELECT district, legal_dong, main_jibun, sub_jibun, 
+               deposit as rent_price, contract_date as contract_date, 
+               exclusive_area as area, building_type as building_type
         FROM raw_rent
-        WHERE 월세 = 0 AND 계약일 >= '20230101'
+        WHERE monthly_rent = 0 AND contract_date >= '20230101'
     """
 
     sql_trade = """
-        SELECT 시군구, 법정동, 본번, 부번, 
-               거래금액 as trade_price, 계약일 as trade_date
+        SELECT district, legal_dong, main_jibun, sub_jibun, 
+               trade_price as trade_price, contract_date as trade_date
         FROM raw_trade
-        WHERE 계약일 >= '20230101'
+        WHERE contract_date >= '20230101'
     """
 
     with engine.connect() as conn:
@@ -167,7 +167,7 @@ def run_type_visualization():
     sigungu_map = get_sigungu_map_from_db()
 
     # 매핑 적용 (매핑 없으면 원래 코드 사용)
-    df['region_name'] = df['시군구'].astype(str).map(sigungu_map).fillna(df['시군구'])
+    df['region_name'] = df['district'].astype(str).map(sigungu_map).fillna(df['district'])
 
     # 3. 유형 분류 및 필터링
     df['category'] = df['building_type'].apply(categorize_building_type)

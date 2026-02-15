@@ -1,0 +1,26 @@
+# ...
+.env
+
+# [신규] SQLite 데이터베이스 파일
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-journal
+
+# (기존)
+.venv/
+__pycache__/
+*.pth
+.idea/
+
+# csv, data
+data
+notebook
+assets
+*.csv
+ocr_test
+ocr_debug
+query
+db
+mysql_data
+redis_data

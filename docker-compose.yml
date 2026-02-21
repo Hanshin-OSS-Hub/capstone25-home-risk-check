@@ -1,0 +1,67 @@
+version: '3.9'
+
+services:
+  # 1. Spring Backend
+  home-risk-check-spring:
+    build:
+      context: ./backend/home-risk-check-spring
+      dockerfile: Dockerfile
+    container_name: home-risk-check-spring
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/home-risk-check-spring:/app
+    env_file:
+      - ./backend/home-risk-check-spring/.env
+    depends_on:
+      - redis
+      - mysql
+
+  # 3. FastAPI Backend
+  home-risk-check-fastapi:
+    build:
+      context: ./backend/home-risk-check-fastapi
+      dockerfile: Dockerfile
+    container_name: home-risk-check-fastapi
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/home-risk-check-fastapi:/app
+    env_file:
+      - ./backend/home-risk-check-fastapi/.env
+    depends_on:
+      - redis
+      - mysql
+
+  # 3. Redis
+  redis:
+    image: redis:7.0-alpine
+    container_name: home-risk-check-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - redis-data:/data
+    restart: always
+
+  # 4. MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: home-risk-check-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    restart: always
+
+# 데이터 유지를 위한 볼륨 설정
+volumes:
+  redis-data:
+  mysql-data:

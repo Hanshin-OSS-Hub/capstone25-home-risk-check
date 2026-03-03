@@ -48,28 +48,14 @@ from app.core.redis_config import (
     health_check_redis,
     TaskStatus,
 )
-
+from contextlib import asynccontextmanager
 logger = logging.getLogger(__name__)
-
-app = FastAPI(
-    title="Fraud Detector AI",
-    version="2.0",
-    description="전세사기 위험도 분석 API (비동기 + Redis 캐싱)"
-)
 
 settings = get_settings()
 origins = ["*"] if settings.APP_ENV == "local" else [
     "https://your-frontend-domain.com",
     "https://app.your-domain.com"
 ]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["*"],
-)
 
 # 파일 업로드 제약사항
 MAX_FILE_SIZE_MB = 20
@@ -80,22 +66,35 @@ ALLOWED_PDF_TYPES = {"application/pdf"}
 # =============================================================================
 # 앱 Lifecycle (Redis 연결/해제)
 # =============================================================================
-@app.on_event("startup")
-async def startup_event():
-    """앱 시작 시 Redis 연결"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup
     redis_client = await get_redis()
     if redis_client:
         logger.info("🚀 Redis 연결 완료")
     else:
         logger.warning("⚠️ Redis 없이 시작 (캐싱 비활성)")
 
+    yield  # 앱 실행 중
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """앱 종료 시 Redis 연결 해제"""
+    # shutdown
     await close_redis()
     logger.info("Redis 연결 종료")
 
+app = FastAPI(
+    title="Fraud Detector AI",
+    version="2.0",
+    description="전세사기 위험도 분석 API (비동기 + Redis 캐싱)",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["*"],
+)
 
 # =============================================================================
 # 유틸리티 함수
@@ -244,16 +243,16 @@ async def predict_risk_endpoint(
     file_hashes = []
     file_contents = {}  # {filename: bytes} - 나중에 임시파일 저장용
 
-    for file in (ledger_files or []):
+    for idx, file in enumerate(ledger_files or []):
         content = await file.read()
         file_hashes.append(generate_file_hash(content))
-        file_contents[f"ledger_{file.filename}"] = content
+        file_contents[f"ledger_{idx}_{file.filename}"] = content
         await asyncio.to_thread(file.file.seek, 0)
 
-    for file in (registry_files or []):
+    for idx, file in enumerate(registry_files or []):
         content = await file.read()
         file_hashes.append(generate_file_hash(content))
-        file_contents[f"registry_{file.filename}"] = content
+        file_contents[f"registry_{idx}_{file.filename}"] = content
         await asyncio.to_thread(file.file.seek, 0)
 
     cache_key = generate_cache_key(address, deposit, file_hashes)
@@ -278,16 +277,16 @@ async def predict_risk_endpoint(
     ledger_paths = []
     registry_paths = []
 
-    for file in (ledger_files or []):
-        file_path = os.path.join(temp_dir, f"ledger_{datetime.now().timestamp()}_{file.filename}")
-        content_key = f"ledger_{file.filename}"
+    for idx, file in enumerate(ledger_files or []):
+        file_path = os.path.join(temp_dir, f"ledger_{idx}_{file.filename}")
+        content_key = f"ledger_{idx}_{file.filename}"
         with open(file_path, "wb") as buffer:
             buffer.write(file_contents[content_key])
         ledger_paths.append(file_path)
 
-    for file in (registry_files or []):
-        file_path = os.path.join(temp_dir, f"registry_{datetime.now().timestamp()}_{file.filename}")
-        content_key = f"registry_{file.filename}"
+    for idx, file in enumerate(registry_files or []):
+        file_path = os.path.join(temp_dir, f"registry_{idx}_{file.filename}")
+        content_key = f"registry_{idx}_{file.filename}"
         with open(file_path, "wb") as buffer:
             buffer.write(file_contents[content_key])
         registry_paths.append(file_path)
@@ -555,9 +554,16 @@ async def _run_prediction_task(
         # --- Step 6: 결과 캐싱 + 완료 (100%) ---
         logger.info(f"[Task {task_id[:8]}] 결과 캐싱...")
 
-        # 성공 결과만 캐싱 (에러 응답은 캐싱하지 않음)
-        if "meta" in result and result["meta"].get("code") == 200:
-            await set_cached_result(cache_key, result)
+        # 에러 응답이면 FAILED로 처리
+        result_code = result.get("meta", {}).get("code", 200)
+        if result_code != 200:
+            await set_task_status(
+                task_id, TaskStatus.FAILED, progress=100, result=result,
+                error=result.get("meta", {}).get("message", "분석 실패")
+            )
+            return
+
+        await set_cached_result(cache_key, result)
 
         await set_task_status(
             task_id, TaskStatus.COMPLETED,

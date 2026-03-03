@@ -64,7 +64,7 @@ def save_prediction_result(
         "hug_safe_limit": hug_safe_limit,
         "hug_risk_ratio": hug_risk_ratio,
         "total_risk_ratio": total_risk_ratio,
-        "estimated_loan_amount": features.get('real_debt', 0),
+        "estimated_loan_amount": features.get('real_debt_manwon', 0) * 10000,
         "risk_level": risk_level,
         "risk_score": int(risk_score),
         "ai_risk_prob": ai_prob
@@ -77,10 +77,12 @@ def save_prediction_result(
         INSERT INTO risk_analysis_result (
             building_info_id, address_key, used_rent_price, used_market_price,
             jeonse_ratio, hug_safe_limit, hug_risk_ratio, total_risk_ratio,
+            estimated_loan_amount,
             risk_level, risk_score, ai_risk_prob, created_at
         ) VALUES (
             :building_info_id, :address_key, :used_rent_price, :used_market_price,
             :jeonse_ratio, :hug_safe_limit, :hug_risk_ratio, :total_risk_ratio,
+            :estimated_loan_amount,
             :risk_level, :risk_score, :ai_risk_prob, NOW()
         )
     """)

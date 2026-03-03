@@ -64,7 +64,7 @@ async def get_redis() -> Optional[Redis]:
 
     try:
         settings = get_settings()
-        redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379/0')
+        redis_url = getattr(settings, 'REDIS_URL', 'redis://redis:6379/0')
 
         _redis_client = aioredis.from_url(
             redis_url,

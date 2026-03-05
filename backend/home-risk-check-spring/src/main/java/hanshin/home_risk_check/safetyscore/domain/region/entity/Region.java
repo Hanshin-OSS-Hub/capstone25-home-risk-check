@@ -1,4 +1,4 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.region.entity;
+package hanshin.home_risk_check.safetyscore.domain.region.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -10,7 +10,7 @@ import org.locationtech.jts.geom.MultiPolygon;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "regions")
+@Table(name = "safety_regions")
 public class Region {
 
     @Id
@@ -31,6 +31,18 @@ public class Region {
 
     @Column(name = "population_stats_ym", length = 6)
     private String populationStatsYm; // 인구 통계 기준 연월 (예: "202312")
+
+    @Column(name = "accident_score")
+    private Double accidentScore; // 교통사고 안전 점수
+
+    @Column(name = "crime_score")
+    private Double crimeScore;    // 범죄 안전 점수
+
+    @Column(name = "infra_score")
+    private Double infraScore;    // 인프라 점수
+
+    @Column(name = "safety_score")
+    private Double safetyScore;   // 최종 합산 안전 점수
 
     @Builder
     public Region(String admCode, String admNm, MultiPolygon geometry){

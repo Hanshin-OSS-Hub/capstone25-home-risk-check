@@ -1,4 +1,4 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.infra.api;
+package hanshin.home_risk_check.safetyscore.infra.api;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

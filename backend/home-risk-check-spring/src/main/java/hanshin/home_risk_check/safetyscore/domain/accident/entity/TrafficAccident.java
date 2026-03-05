@@ -1,4 +1,4 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.traffic.entity;
+package hanshin.home_risk_check.safetyscore.domain.accident.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

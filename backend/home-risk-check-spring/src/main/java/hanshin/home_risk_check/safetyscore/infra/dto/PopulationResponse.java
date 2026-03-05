@@ -1,4 +1,4 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.infra.dto;
+package hanshin.home_risk_check.safetyscore.infra.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

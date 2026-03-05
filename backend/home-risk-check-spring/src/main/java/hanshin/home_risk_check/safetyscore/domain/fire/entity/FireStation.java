@@ -1,10 +1,11 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.fire.entity;
+package hanshin.home_risk_check.safetyscore.domain.fire.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.locationtech.jts.geom.Point;
 
 @Entity
 @Getter
@@ -18,14 +19,24 @@ public class FireStation {
 
     private String name;
     private String address;
-    private Double latitude;
-    private Double longitude;
+
+    @Column(nullable = false)
+    private Point geometry;
 
     @Builder
-    public FireStation(String name, String address, Double latitude, Double longitude){
+    public FireStation(String name, String address, Point geometry){
         this.name = name;
         this.address = address;
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.geometry = geometry;
+    }
+
+    //위도
+    public Double getLatitude() {
+        return this.geometry != null ? this.geometry.getY() : null;
+    }
+
+    //경도
+    public Double getLongitude() {
+        return this.geometry != null ? this.geometry.getX() : null;
     }
 }

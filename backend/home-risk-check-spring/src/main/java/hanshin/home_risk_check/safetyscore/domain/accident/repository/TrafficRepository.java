@@ -1,6 +1,6 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.traffic.repository;
+package hanshin.home_risk_check.safetyscore.domain.accident.repository;
 
-import hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.traffic.entity.TrafficAccident;
+import hanshin.home_risk_check.safetyscore.domain.accident.entity.TrafficAccident;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

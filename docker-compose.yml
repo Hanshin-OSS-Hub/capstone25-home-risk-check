@@ -17,21 +17,21 @@ services:
       - redis
       - mysql
 
-  # 3. FastAPI Backend
-  home-risk-check-fastapi:
-    build:
-      context: ./backend/home-risk-check-fastapi
-      dockerfile: Dockerfile
-    container_name: home-risk-check-fastapi
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/home-risk-check-fastapi:/app
-    env_file:
-      - ./backend/home-risk-check-fastapi/.env
-    depends_on:
-      - redis
-      - mysql
+#  # 3. FastAPI Backend
+#  home-risk-check-fastapi:
+#    build:
+#      context: ./backend/home-risk-check-fastapi
+#      dockerfile: Dockerfile
+#    container_name: home-risk-check-fastapi
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - ./backend/home-risk-check-fastapi:/app
+#    env_file:
+#      - ./backend/home-risk-check-fastapi/.env
+#    depends_on:
+#      - redis
+#      - mysql
 
   # 3. Redis
   redis:
@@ -49,10 +49,10 @@ services:
     image: mysql:8.0
     container_name: home-risk-check-mysql
     ports:
-      - "3306:3306"
+      - "3330:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DB_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB_NAME}
       TZ: Asia/Seoul
     volumes:
       - mysql-data:/var/lib/mysql

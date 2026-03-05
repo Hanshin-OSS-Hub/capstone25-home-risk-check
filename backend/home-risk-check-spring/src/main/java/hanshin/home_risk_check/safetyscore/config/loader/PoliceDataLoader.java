@@ -1,7 +1,8 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.config.loader;
+package hanshin.home_risk_check.safetyscore.config.loader;
 
-import hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.police.entity.PoliceStation;
-import hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.police.repository.PoliceStationRepository;
+
+import hanshin.home_risk_check.safetyscore.domain.police.entity.PoliceStation;
+import hanshin.home_risk_check.safetyscore.domain.police.repository.PoliceStationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Coordinate;
@@ -24,18 +25,11 @@ import java.util.*;
 public class PoliceDataLoader {
 
     private final JdbcTemplate jdbcTemplate;
-    private final PoliceStationRepository policeStationRepository;
+    private final FileSyncService fileSyncService;
 
     @Transactional
     public void loadData() {
         try {
-            // 이미 존재하는 데이터 인지 조회
-            Set<String> existingNames = policeStationRepository.findAllNames();
-            log.info("현재 DB에 저장된 경찰관서: {}개", existingNames.size());
-
-            // 임시 저장용 Map (중복 파일 제거용)
-            Map<String, PoliceStation> stationMap = new HashMap<>();
-
             // 파일 가져오기
             Resource[] resources = new PathMatchingResourcePatternResolver()
                     .getResources("classpath:safetyscore/police/*.csv");
@@ -45,23 +39,36 @@ public class PoliceDataLoader {
                 return;
             }
 
+            String sql = "INSERT INTO police_stations (name, type, address, geometry) " +
+                    "VALUES (?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
+                    "ON DUPLICATE KEY UPDATE " +
+                    "type = VALUES(type), address = VALUES(address), geometry = VALUES(geometry)";
+
+            int totalProcessedCount = 0;
+
             for (Resource resource : resources){
                 //파일명에 따라 파싱 방법 결정
                 String filename = resource.getFilename();
+                String fileHash = fileSyncService.calculateHash(resource);
+                boolean isChanged = fileSyncService.isChanged(filename, fileHash);
+
+                if (!isChanged) {
+                    log.info("경찰서 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                    continue;// 파일이 안 변했으면 바로 종료
+                }
+                log.info("{} 파일 변경 감지, 데이터 동기화를 시작합니다.", filename);
+
                 String mode = (filename != null && filename.contains("substation")) ? "SUB" : "MAIN";
 
                 //파일 읽어오기
-                processFileContent(resource, mode, existingNames, stationMap);
+                int count = processFileContent(resource, mode, sql);
+                totalProcessedCount += count;
+
+                fileSyncService.updateSyncHistory(filename, fileHash);
             }
 
-            if (!stationMap.isEmpty()){
-                // Map에서 value값만 가져오기
-                List<PoliceStation> newStations = new ArrayList<>(stationMap.values());
-                policeStationRepository.saveAll(newStations);
-                log.info("신규 경찰관서 {}개 저장 완료", newStations.size());
-            }
-            else {
-                log.info("추가할 신규 경찰관서 데이터가 없습니다.");
+            if (totalProcessedCount > 0) {
+                log.info("경찰관서 데이터  동기화 완료. 총 {}건이 추가 되었습니다.", totalProcessedCount);
             }
         } catch (Exception e) {
             log.error("경찰서 데이터 로드 중 오류 발생");
@@ -70,12 +77,14 @@ public class PoliceDataLoader {
     }
 
     /**
-     * CSV 파일 내용을 읽어 파싱하고, 중복 제거 및 보정 후 임시 맵에 저장하는 메서드
+     * CSV 파일 내용을 읽어 파싱하여 JDBC 로 DB에 넣음
      */
-    private void processFileContent(Resource resource, String mode, Set<String> existingNames, Map<String, PoliceStation> stationMap){
+    private int processFileContent(Resource resource, String mode, String sql){
         // 해당 Mode에 맞는 데이터 보정값 가져오기
         Map<String,double[]> fixMap = getFixMap(mode);
-        GeometryFactory geometryFactory = new GeometryFactory();
+
+        List<Object[]> batchArgs = new ArrayList<>();
+        int processedCount = 0;
 
         try (BufferedReader br = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
             br.readLine(); // 헤더 스킵
@@ -102,8 +111,8 @@ public class PoliceDataLoader {
                             lat = fixMap.get(name)[0];
                             lon = fixMap.get(name)[1];
                         } else {
-                            lon = Double.parseDouble(data[5]); // x_axis
-                            lat = Double.parseDouble(data[6]); // y_axis}
+                            lon = Double.parseDouble(data[5].replaceAll("[^0-9.-]", "")); // x_axis
+                            lat = Double.parseDouble(data[6].replaceAll("[^0-9.-]", "")); // y_axis}
                         }
                     } else {
                         if (data.length < 10) continue;
@@ -117,39 +126,38 @@ public class PoliceDataLoader {
                             lat = fixMap.get(name)[0];
                             lon = fixMap.get(name)[1];
                         } else {
-                            lon = Double.parseDouble(data[8]); // x_axis
-                            lat = Double.parseDouble(data[9]); // y_axis}
+                            lon = Double.parseDouble(data[8].replaceAll("[^0-9.-]", "")); // x_axis
+                            lat = Double.parseDouble(data[9].replaceAll("[^0-9.-]", "")); // y_axis}
                         }
-                    }
-
-                    // DB에 이미 존재하는 이름이면 건너띔
-                    if (existingNames.contains(name)) {
-                        continue;
                     }
 
 
                     // 한국 위도 범위를 벗어난 잘못된 데이터 좌표 걸러냄
                     if (lat < 33 || lat > 39) continue;
 
-                    // JTS 공간 객체 생성 ,MySQL 8.0의 4326 좌표계 표준에 맞춰 POINT(위도 경도) 순서로 생성
-                    Point location = geometryFactory.createPoint(new Coordinate(lon, lat));
-                    location.setSRID(4326); // WGS84 좌표계 부여
+                    // WKT 문자열 형식으로 변환
+                    String pointWkt = "POINT(" + lon + " " + lat + ")";
 
-                    // Map에 담아둠 (이미 처리된 이름이 다시 나올 경우 최신 값으로 자동 갱신되어 파일 내 중복 방지)
-                    stationMap.put(name, PoliceStation.builder()
-                            .name(name)
-                            .type(type)
-                            .address(address)
-                            .geometry(location)
-                            .build());
+                    batchArgs.add(new Object[]{name, type, address, pointWkt});
+                    processedCount++;
+
+                    if (batchArgs.size() == 1000) {
+                        jdbcTemplate.batchUpdate(sql, batchArgs);
+                        batchArgs.clear();
+                    }
+
                 } catch (Exception e){
                     log.error("라인 처리 중 문제 발생 : {} ", line);
                 }
-
+            }
+            if (!batchArgs.isEmpty()) {
+                jdbcTemplate.batchUpdate(sql, batchArgs);
             }
         } catch (Exception e){
             log.error("파일 읽는중 문제 발생 : {} ", resource.getFilename(), e);
         }
+
+        return processedCount;
     }
 
     private Map<String, double[]> getFixMap(String mode) {

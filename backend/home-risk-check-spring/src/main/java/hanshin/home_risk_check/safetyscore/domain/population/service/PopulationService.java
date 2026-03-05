@@ -1,9 +1,9 @@
-package hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.population.service;
+package hanshin.home_risk_check.safetyscore.domain.population.service;
 
-import hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.region.entity.Region;
-import hanshin.homeriskcheck.home_risk_check_backend.safetyscore.domain.region.repository.RegionRepository;
-import hanshin.homeriskcheck.home_risk_check_backend.safetyscore.infra.api.OpenApiCaller;
-import hanshin.homeriskcheck.home_risk_check_backend.safetyscore.infra.dto.PopulationResponse;
+import hanshin.home_risk_check.safetyscore.domain.region.entity.Region;
+import hanshin.home_risk_check.safetyscore.domain.region.repository.RegionRepository;
+import hanshin.home_risk_check.safetyscore.infra.api.OpenApiCaller;
+import hanshin.home_risk_check.safetyscore.infra.dto.PopulationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

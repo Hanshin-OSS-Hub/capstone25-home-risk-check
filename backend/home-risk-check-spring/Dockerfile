@@ -1,11 +1,11 @@
 # 1. 베이스 이미지
-FROM openjdk:21-jdk-alpine
+FROM eclipse-temurin:21
 
 # 2. 작업 디렉토리
 WORKDIR /app
 
 # 3. 로컬에서 빌드된 JAR 복사
-COPY build/libs/home-risk-check.jar app.jar
+COPY build/libs/home-risk-check-0.0.1-SNAPSHOT.jar app.jar
 
 # 4. 포트 노출
 EXPOSE 8080

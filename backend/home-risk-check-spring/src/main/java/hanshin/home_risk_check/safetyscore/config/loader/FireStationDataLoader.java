@@ -48,7 +48,7 @@ public class FireStationDataLoader {
                 return;
             }
 
-            log.info("소방서 파일 변경 감지. 데이터 동기화를 시작합니다.");
+            log.info("소방서 CSV 파일 변경 감지. 데이터 동기화를 시작합니다.");
 
             String insertSql = "INSERT INTO fire_stations (name, address, geometry) " +
                     "VALUES (?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
@@ -118,7 +118,7 @@ public class FireStationDataLoader {
                 }
 
                 fileSyncService.updateSyncHistory(filename, fileHash);
-                log.info("소방서 데이터 자동 좌표 변환 및 동기화 완료! 총 {}건 추가됨.", insertCount);
+                log.info("소방서 데이터 자동 좌표 변환 및 동기화 완료. 총 {}건 추가되었습니다.", insertCount);
 
             }
         } catch (Exception e) {

@@ -44,6 +44,7 @@ public class FileSyncService {
         }
 
     }
+
     // 파일이 변경 되었는지 확인
     public boolean isChanged (String fileName, String currentHash){
         return fileSyncHistoryRepository.findByFileName(fileName)

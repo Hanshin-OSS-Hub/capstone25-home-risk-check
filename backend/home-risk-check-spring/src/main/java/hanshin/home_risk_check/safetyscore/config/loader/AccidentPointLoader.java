@@ -46,7 +46,7 @@ public class AccidentPointLoader {
 
             if (!isChanged) {
                 log.info("교통사고 다발지역 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
-                return; // 파일이 안 변했으면 바로 종료
+                return;
             }
 
             log.info("교통사고 다발지역 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");

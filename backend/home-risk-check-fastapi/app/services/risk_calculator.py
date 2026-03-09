@@ -2,10 +2,16 @@
 위험도 계산 서비스
 
 담당 기능:
-- 위험 피처 계산
+- OCR/DB 원천 데이터 → feature_service 피처 변환 (어댑터)
 - AI 모델 예측
 - 위험 등급 판정
 - 위험 요인 분석
+
+[변경 이력]
+- 중복 calculate_risk_features() 제거 → feature_service.py로 단일화
+- build_features_from_sources(): OCR/DB dict → feature_service 시그니처 변환 어댑터 추가
+- predict_with_model(): feature_service.convert_to_model_input() 사용으로 통일
+- bare except → except Exception 수정
 """
 import os
 import logging
@@ -16,13 +22,18 @@ import numpy as np
 import pandas as pd
 import joblib
 
+# 단일 피처 소스
+from app.services.feature_service import (
+    calculate_risk_features,
+    convert_to_model_input,
+    TRAIN_FEATURES,
+)
+
 logger = logging.getLogger(__name__)
 
 # 프로젝트 루트
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-# 건물 유형 컬럼
-USE_COLS = ['type_APT', 'type_OFFICETEL', 'type_VILLA', 'type_ETC']
 
 # =============================================================================
 # AI 모델 로더 (Lazy Loading)
@@ -53,9 +64,9 @@ def get_model():
 
 
 # =============================================================================
-# 위험 피처 계산
+# 어댑터: OCR/DB 원천 데이터 → feature_service 피처 변환
 # =============================================================================
-def calculate_risk_features(
+def build_features_from_sources(
         deposit_manwon: float,
         market_price_manwon: float,
         public_price_won: float = 0,
@@ -63,37 +74,33 @@ def calculate_risk_features(
         ocr_features: Optional[Dict] = None
 ) -> Dict[str, Any]:
     """
-    위험도 분석용 피처 계산
+    predict_service에서 호출하는 어댑터 함수.
+    OCR 결과 dict, DB 건물 정보 dict 등 다양한 소스에서
+    feature_service.calculate_risk_features()가 요구하는 시그니처로 변환합니다.
 
     Args:
         deposit_manwon: 보증금 (만원)
         market_price_manwon: 시세 (만원)
-        public_price_won: 공시가 (원)
+        public_price_won: 공시가 (원) — 참고용으로 결과에 추가
         building_info: 건물 정보 (DB 조회 결과)
         ocr_features: OCR 추출 피처
 
     Returns:
-        피처 딕셔너리
+        피처 딕셔너리 (TRAIN_FEATURES + _ref_ 참고 수치 + 어댑터 추가 키)
     """
     building_info = building_info or {}
     ocr_features = ocr_features or {}
 
-    # 1. 전세가율
-    jeonse_ratio = deposit_manwon / market_price_manwon if market_price_manwon > 0 else 0
+    # --- 1. 원천 데이터에서 feature_service 파라미터 추출 ---
 
-    # 2. HUG 위험 비율
-    hug_limit = (public_price_won * 1.26 / 10000) if public_price_won > 0 else market_price_manwon
-    hug_risk_ratio = deposit_manwon / hug_limit if hug_limit > 0 else 0
-
-    # 3. 선순위 채권 반영 총 위험 비율
+    # 선순위 채권 (만원)
     real_debt = ocr_features.get('real_debt_manwon', 0)
-    total_risk_ratio = (deposit_manwon + real_debt) / market_price_manwon if market_price_manwon > 0 else 0
 
-    # 4. 신탁 여부
+    # 신탁 여부
     owner_name = str(building_info.get('owner_name', ''))
     is_trust = ocr_features.get('is_trust_owner', 0) or (1 if '신탁' in owner_name else 0)
 
-    # 5. 단기 소유 가중치
+    # 단기 소유 가중치
     short_term_weight = ocr_features.get('short_term_weight', 0)
     if short_term_weight == 0 and building_info.get('ownership_changed_date'):
         try:
@@ -104,68 +111,50 @@ def calculate_risk_features(
                 short_term_weight = 0.3
             elif days_diff < 730:
                 short_term_weight = 0.1
-        except:
+        except Exception:
             pass
 
-    # 6. 건물 유형 가중치
+    # 주용도
     main_use = str(building_info.get('main_use', '') or ocr_features.get('main_use', ''))
-    type_weight = 0.0
 
-    if '근린' in main_use:
-        type_weight = 0.4
-    elif any(t in main_use for t in ['다세대', '오피스텔', '연립']):
-        type_weight = 0.1
-
-    # 7. 위험 점수 (정성적 요소)
-    risk_score_val = np.clip(type_weight + short_term_weight + (0.5 if is_trust else 0), 0, 1.0)
-
-    # 8. 건물 나이
-    building_age = 10  # 기본값
-    use_apr_day = building_info.get('use_apr_day') or ocr_features.get('usage_approval_date')
-
-    if use_apr_day:
-        try:
-            apr_date = pd.to_datetime(use_apr_day)
-            building_age = (datetime.now() - apr_date).days / 365.25
-        except:
-            pass
-
-    # 9. 기타 피처
-    household_cnt = building_info.get('household_cnt') or 1
-    if household_cnt < 1:
-        household_cnt = 1
-
-    is_micro_complex = 1 if household_cnt < 100 else 0
+    # 위반 건축물 여부
     is_illegal = ocr_features.get('is_illegal', 0) or (
         1 if str(building_info.get('is_violating_building', '')).strip() == 'Y' else 0
     )
 
-    # 10. One-Hot Encoding (건물 유형)
-    type_dict = {col: 0 for col in USE_COLS}
+    # 사용승인일
+    use_apr_day = building_info.get('use_apr_day') or ocr_features.get('usage_approval_date', '')
 
-    if '아파트' in main_use:
-        type_dict['type_APT'] = 1
-    elif '오피스텔' in main_use:
-        type_dict['type_OFFICETEL'] = 1
-    elif '다세대' in main_use or '연립' in main_use:
-        type_dict['type_VILLA'] = 1
-    else:
-        type_dict['type_ETC'] = 1
+    # 세대수
+    household_cnt = building_info.get('household_cnt') or 1
+    if household_cnt < 1:
+        household_cnt = 1
 
-    # 결과 조합
-    features = {
-        'jeonse_ratio': jeonse_ratio,
-        'hug_risk_ratio': hug_risk_ratio,
-        'total_risk_ratio': total_risk_ratio,
-        'estimated_loan_ratio': risk_score_val,
-        'building_age': building_age,
-        'is_illegal': is_illegal,
-        'is_micro_complex': is_micro_complex,
-        'is_trust_owner': is_trust,
-        'short_term_weight': short_term_weight,
-        'real_debt': real_debt,
-        **type_dict
-    }
+    # --- 2. 단일 피처 함수 호출 ---
+    features = calculate_risk_features(
+        deposit_amount=deposit_manwon,
+        market_price=market_price_manwon,
+        real_debt=real_debt,
+        main_use=main_use,
+        usage_approval_date=use_apr_day,
+        is_illegal=is_illegal,
+        is_trust_owner=is_trust,
+        short_term_weight=short_term_weight,
+        household_count=household_cnt,
+    )
+
+    # --- 3. predict_service가 필요로 하는 추가 키 보강 ---
+    # 공시가 기반 HUG 위험 비율 (실제 공시가가 있는 경우 덮어쓰기)
+    if public_price_won > 0:
+        hug_limit_manwon = (public_price_won * 1.26) / 10000
+        features['_ref_hug_risk_ratio'] = deposit_manwon / hug_limit_manwon if hug_limit_manwon > 0 else 0
+
+    # predict_service에서 사용하는 레거시 키 호환
+    # (analyze_risk_factors, API 응답 등에서 참조)
+    features['jeonse_ratio'] = features.get('jeonse_ratio', 0)
+    features['total_risk_ratio'] = features.get('_ref_total_risk_ratio', 0)
+    features['hug_risk_ratio'] = features.get('_ref_hug_risk_ratio', 0)
+    features['real_debt'] = real_debt
 
     return features
 
@@ -178,7 +167,7 @@ def predict_with_model(features: Dict[str, Any]) -> float:
     AI 모델로 위험 확률 예측
 
     Args:
-        features: 피처 딕셔너리
+        features: 피처 딕셔너리 (build_features_from_sources 또는 calculate_risk_features 반환값)
 
     Returns:
         위험 확률 (0.0 ~ 1.0)
@@ -190,15 +179,8 @@ def predict_with_model(features: Dict[str, Any]) -> float:
         return _rule_based_prediction(features)
 
     try:
-        # DataFrame 변환
-        df_input = pd.DataFrame([features])
-
-        # 모델 피처 순서 맞추기
-        try:
-            train_features = model.feature_names_in_
-            df_input = df_input.reindex(columns=train_features, fill_value=0)
-        except AttributeError:
-            logger.warning("모델 피처 이름 확인 불가")
+        # feature_service의 convert_to_model_input 사용 (피처 순서 보장)
+        df_input = convert_to_model_input(features)
 
         # 예측
         prob = model.predict_proba(df_input)[0][1]
@@ -210,20 +192,30 @@ def predict_with_model(features: Dict[str, Any]) -> float:
 
 
 def _rule_based_prediction(features: Dict[str, Any]) -> float:
-    """룰 베이스 위험도 예측 (모델 없을 때 Fallback)"""
+    """
+    룰 베이스 위험도 예측 (모델 없을 때 Fallback)
+
+    [개선] is_illegal, total_risk_ratio 반영
+    """
     prob = 0.0
 
     # 전세가율 80% 초과
-    if features.get('jeonse_ratio', 0) >= 0.8:
+    jeonse_ratio = features.get('jeonse_ratio', 0)
+    if jeonse_ratio >= 0.8:
         prob = max(prob, 0.8)
-    elif features.get('jeonse_ratio', 0) >= 0.7:
+    elif jeonse_ratio >= 0.7:
         prob = max(prob, 0.5)
 
     # 총 위험 비율 (선순위 채권 포함)
-    if features.get('total_risk_ratio', 0) >= 0.9:
+    total_risk = features.get('total_risk_ratio', 0) or features.get('_ref_total_risk_ratio', 0)
+    if total_risk >= 0.9:
         prob = max(prob, 0.9)
-    elif features.get('total_risk_ratio', 0) >= 0.8:
+    elif total_risk >= 0.8:
         prob = max(prob, 0.7)
+
+    # 위반 건축물
+    if features.get('is_illegal', 0):
+        prob = max(prob, 0.6)
 
     # 신탁 + 단기 소유
     if features.get('is_trust_owner', 0) and features.get('short_term_weight', 0) > 0:
@@ -293,7 +285,7 @@ def analyze_risk_factors(
         })
 
     # 3. 선순위 채권
-    real_debt = features.get('real_debt', 0)
+    real_debt = features.get('real_debt', 0) or features.get('_ref_real_debt', 0)
     if real_debt > 0:
         risk_factors.append({
             "type": "SENIOR_DEBT",

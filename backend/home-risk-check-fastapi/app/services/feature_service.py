@@ -1,8 +1,22 @@
+"""
+피처 엔지니어링 서비스 (단일 소스)
+
+담당 기능:
+- AI 모델 입력용 피처 계산 (학습 & 추론 공통)
+- 모델 입력 DataFrame 변환
+
+[변경 이력]
+- bare except → except Exception 수정
+- 이 모듈이 피처 계산의 유일한 소스 (risk_calculator.py에서 중복 제거됨)
+"""
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from typing import Dict, Any
 
-# 학습 때 사용한 피처 순서와 동일하게 유지
+# =============================================================================
+# 학습 & 추론에 사용하는 피처 목록 (순서 보장)
+# =============================================================================
 TRAIN_FEATURES = [
     'building_age',       # 건물 연식
     'is_illegal',         # 위반건축물 여부
@@ -23,9 +37,12 @@ def calculate_risk_features(
         is_trust_owner: int,  # 신탁 소유 여부 (0 or 1)
         short_term_weight: float,  # 단기 소유 가중치 (0.0 ~ 0.3)
         household_count: int = 0,  # 총 세대수
-) -> dict:
+) -> Dict[str, Any]:
     """
-    원천 데이터를 받아 AI 모델 입력용 피처 딕셔너리로 변환하는 함수
+    원천 데이터를 받아 AI 모델 입력용 피처 딕셔너리로 변환하는 함수.
+
+    Returns:
+        dict - TRAIN_FEATURES에 해당하는 피처 + '_ref_' 접두사 참고용 수치
     """
 
     # 1. 시세가 0이거나 없을 경우 방어 로직 (보증금 역산)
@@ -33,18 +50,18 @@ def calculate_risk_features(
         market_price = deposit_amount * 1.25  # 전세가율 80% 가정
 
     # 2. 비율 지표 계산
-    # (1) 전세가율 (순수 보증금 / 시세)
+    # (1) 전세가율 (순수 보증금 / 시세) — 핵심 모델 피처
     jeonse_ratio = deposit_amount / market_price
 
-    # (2) 깡통전세율
+    # (2) 깡통전세율 — 참고용 (모델 피처 아님)
     total_risk_ratio = (deposit_amount + real_debt) / market_price
 
-    # (3) HUG 위험도
+    # (3) HUG 위험도 — 참고용 (모델 피처 아님)
     est_public_price = market_price * 0.7
     hug_limit = est_public_price * 1.26
     hug_risk_ratio = deposit_amount / hug_limit if hug_limit > 0 else 0
 
-    # 3. 정성적 위험 점수
+    # 3. 정성적 위험 점수 — 참고용 (모델 피처 아님)
     type_w = 0.0
     main_use_str = str(main_use)
     if '근린' in main_use_str:
@@ -66,7 +83,7 @@ def calculate_risk_features(
                 building_age = (datetime.now() - dt).days / 365.25
             else:
                 building_age = 10
-    except:
+    except Exception:
         building_age = 10
 
     # 5. One-Hot Encoding (건물 유형)
@@ -85,7 +102,6 @@ def calculate_risk_features(
     is_micro_complex = 1 if household_count < 100 else 0
 
     # 7. 최종 딕셔너리 조립
-    # 참고용 수치(total_risk_ratio 등)는 별도 키로 보관해 API 응답에서 활용 가능
     features = {
         # --- TRAIN_FEATURES (모델 입력) ---
         'jeonse_ratio': jeonse_ratio,
@@ -99,6 +115,7 @@ def calculate_risk_features(
         '_ref_total_risk_ratio': total_risk_ratio,
         '_ref_hug_risk_ratio': hug_risk_ratio,
         '_ref_estimated_loan_ratio': risk_score_val,
+        '_ref_real_debt': real_debt,
     }
     features.update(type_dict)
 

@@ -1,3 +1,16 @@
+"""
+전세사기 위험도 예측 모델 학습
+
+[변경 이력]
+- 데이터 누수(Data Leakage) 수정:
+  - 라벨(is_fraud) 생성을 '원천 데이터 기반' 조건으로 한정
+  - 피처에 포함되는 is_illegal, is_trust_owner, short_term_weight를
+    단독 라벨 조건에서 제거
+  - 라벨 조건은 오직 '전세가율(원천)' 과 '갭(원천)' 기반만 사용
+  - 위반건축물, 신탁, 단기소유는 피처로만 활용 (모델이 패턴을 학습)
+- 50건 미만 전체 학습 제거 (과적합 방지)
+- bare except → except Exception
+"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -62,6 +75,13 @@ def train_and_save_model():
 
     # ---------------------------------------------------------
     # 4. 정답지(Label) 생성: 'is_fraud'
+    #
+    # *** 데이터 누수 방지 원칙 ***
+    # - 라벨 조건은 '원천 데이터(RENT_PRICE, ESTIMATED_MARKET_PRICE)'만 사용
+    # - 피처에 포함되는 변수(is_illegal, is_trust_owner, short_term_weight)는
+    #   라벨 조건에서 제외 → 모델이 스스로 패턴을 학습하도록 함
+    # - 이전 코드에서 cond_illegal, cond_trust_complex, cond_short_complex가
+    #   피처와 동일한 값을 사용하여 accuracy가 과대평가되던 문제 수정
     # ---------------------------------------------------------
 
     # 방어: 필수 원천 컬럼 존재 여부 확인
@@ -75,27 +95,17 @@ def train_and_save_model():
     raw_jeonse_ratio = df['RENT_PRICE'] / df['ESTIMATED_MARKET_PRICE'].replace(0, np.nan)
     raw_gap          = df['ESTIMATED_MARKET_PRICE'] - df['RENT_PRICE']
 
+    # --- 라벨 조건 (원천 데이터 기반만 사용) ---
+
     # 조건 1: 깡통전세 (전세가율 80% 이상) - 원천값 기반
     cond_high_ratio = raw_jeonse_ratio >= 0.8
 
     # 조건 2: 무자본 갭투자 의심 (매매가 - 전세가 1,000만원 미만) - 원천값 기반
     cond_gap = raw_gap < 1000
 
-    # 조건 3: 위반건축물 (사실(fact) 기반 단독 조건 - 피처와 겹쳐도 정보 자체가 다름)
-    cond_illegal = df['is_illegal'] == 1
-
-    # 조건 4: 복합 위험 - 전세가율 70% 이상 + 신탁 소유
-    cond_trust_complex = (raw_jeonse_ratio >= 0.7) & (df['is_trust_owner'] == 1)
-
-    # 조건 5: 복합 위험 - 전세가율 70% 이상 + 단기 소유
-    cond_short_complex = (raw_jeonse_ratio >= 0.7) & (df['short_term_weight'] > 0)
-
     df['is_fraud'] = (
         cond_high_ratio |
-        cond_gap        |
-        cond_illegal    |
-        cond_trust_complex |
-        cond_short_complex
+        cond_gap
     ).astype(int)
 
     total_cnt = len(df)
@@ -127,17 +137,19 @@ def train_and_save_model():
     X = df[feature_cols]
     y = df['is_fraud']
 
+    # [수정] 데이터 부족 시 학습 중단 (기존: 전체 데이터로 학습 → 과적합)
     if len(df) < 50:
-        print("⚠️ 데이터가 50건 미만입니다. train/test 분리 없이 전체 데이터로 학습합니다.")
-        X_train, X_test, y_train, y_test = X, X, y, y
-    else:
-        if len(np.unique(y)) < 2:
-            print("❌ 레이블 클래스가 1개뿐입니다 (모두 안전 or 모두 위험). 학습 불가.")
-            return
+        print("❌ 데이터가 50건 미만입니다. 유의미한 학습이 불가합니다.")
+        print("   → 최소 50건 이상의 데이터를 확보한 뒤 다시 실행해주세요.")
+        return
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
+    if len(np.unique(y)) < 2:
+        print("❌ 레이블 클래스가 1개뿐입니다 (모두 안전 or 모두 위험). 학습 불가.")
+        return
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
     # ---------------------------------------------------------
     # 6. 모델 학습 (Random Forest)
@@ -163,6 +175,11 @@ def train_and_save_model():
     # 기본 지표
     acc = accuracy_score(y_test, y_pred)
     print(f"   정확도(Accuracy): {acc:.4f}")
+
+    # [추가] 데이터 누수 경고 (accuracy가 비정상적으로 높을 때)
+    if acc > 0.95:
+        print(f"\n   ⚠️  Accuracy {acc:.4f} — 비정상적으로 높습니다.")
+        print(f"       데이터 누수 또는 데이터 부족으로 인한 과적합 가능성을 확인하세요.")
 
     # ROC-AUC
     roc = 0.0

@@ -8,9 +8,12 @@
 - address_service: 주소 정규화, PNU 변환
 - building_service: 건축물대장 수집/조회
 - price_service: 시세 조회 (실거래가, 공시지가)
-- risk_calculator: 위험도 계산, AI 예측
+- risk_calculator: 위험도 계산, AI 예측 (피처 계산은 feature_service에 위임)
 - ocr_parser_service: OCR 데이터 파싱
 - result_service: 결과 저장
+
+[변경 이력]
+- import를 risk_calculator.build_features_from_sources로 변경 (피처 단일 소스)
 """
 import logging
 from datetime import datetime
@@ -33,7 +36,7 @@ from app.services.price_service import (
     calculate_hug_eligibility
 )
 from app.services.risk_calculator import (
-    calculate_risk_features,
+    build_features_from_sources,  # 변경: calculate_risk_features → build_features_from_sources
     predict_with_model,
     determine_risk_level,
     analyze_risk_factors,
@@ -103,8 +106,8 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
             public_price, deposit_manwon
         )
 
-        # 6. 위험 피처 계산
-        features = calculate_risk_features(
+        # 6. 위험 피처 계산 (어댑터 함수 사용)
+        features = build_features_from_sources(
             deposit_manwon=deposit_manwon,
             market_price_manwon=market_price,
             public_price_won=public_price,
@@ -136,8 +139,8 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
             "risk_score": risk_score,
             "risk_level": risk_level,
             "details": {
-                "hug_ratio": round(features['hug_risk_ratio'] * 100, 1),
-                "total_ratio": round(features['total_risk_ratio'] * 100, 1),
+                "hug_ratio": round(features.get('hug_risk_ratio', 0) * 100, 1),
+                "total_ratio": round(features.get('total_risk_ratio', 0) * 100, 1),
                 "is_trust": bool(features.get('is_trust_owner', 0)),
                 "is_short_term": bool(features.get('short_term_weight', 0) > 0)
             }
@@ -197,15 +200,15 @@ def predict_risk_with_ocr(
             return _error_response(422, "시세 데이터 없음",
                                    "공시지가 또는 실거래가 데이터를 찾을 수 없어 분석할 수 없습니다")
 
-        # 4. 위험 피처 계산
-        features = calculate_risk_features(
+        # 4. 위험 피처 계산 (어댑터 함수 사용)
+        features = build_features_from_sources(
             deposit_manwon=deposit_manwon,
             market_price_manwon=market_price,
             public_price_won=public_price,
             ocr_features=ocr_features
         )
 
-        # HUG 위험 비율 업데이트
+        # HUG 위험 비율 업데이트 (실제 공시가 기반)
         if public_price > 0:
             features['hug_risk_ratio'] = (deposit_manwon * 10000) / (public_price * 1.26)
 
@@ -278,7 +281,7 @@ def predict_risk_with_ocr(
             "_debug_info": {
                 "pnu": pnu,
                 "features_used": {k: v for k, v in features.items()
-                                  if k not in ['estimated_loan_ratio']}
+                                  if not k.startswith('_ref_')}
             }
         }
     except DatabaseConnectionError:

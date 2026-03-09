@@ -4,10 +4,12 @@ from datetime import datetime
 
 # 학습 때 사용한 피처 순서와 동일하게 유지
 TRAIN_FEATURES = [
-    'jeonse_ratio', 'hug_risk_ratio', 'total_risk_ratio', 'estimated_loan_ratio',
-    'building_age', 'is_illegal', 'is_micro_complex',
-    'is_trust_owner', 'short_term_weight',
-    'type_APT', 'type_OFFICETEL', 'type_VILLA', 'type_ETC'
+    'building_age',       # 건물 연식
+    'is_illegal',         # 위반건축물 여부
+    'is_micro_complex',   # 소규모 단지 여부 (100세대 미만)
+    'is_trust_owner',     # 신탁 소유 여부
+    'short_term_weight',  # 단기 소유 가중치
+    'type_APT', 'type_OFFICETEL', 'type_VILLA', 'type_ETC'  # 건물 유형 원핫인코딩
 ]
 
 
@@ -34,16 +36,15 @@ def calculate_risk_features(
     # (1) 전세가율 (순수 보증금 / 시세)
     jeonse_ratio = deposit_amount / market_price
 
-    # (2) 깡통전세율 ( (보증금 + 선순위채권) / 시세 ) -> *핵심*
+    # (2) 깡통전세율
     total_risk_ratio = (deposit_amount + real_debt) / market_price
 
-    # (3) HUG 위험도 (공시가는 시세의 70%로 추정)
+    # (3) HUG 위험도
     est_public_price = market_price * 0.7
     hug_limit = est_public_price * 1.26
     hug_risk_ratio = deposit_amount / hug_limit if hug_limit > 0 else 0
 
-    # 3. 정성적 위험 점수 (estimated_loan_ratio)
-    # 건물 유형 가중치
+    # 3. 정성적 위험 점수
     type_w = 0.0
     main_use_str = str(main_use)
     if '근린' in main_use_str:
@@ -51,30 +52,22 @@ def calculate_risk_features(
     elif any(x in main_use_str for x in ['다세대', '연립', '오피스텔', '빌라']):
         type_w = 0.1
 
-    # 점수 합산 (0 ~ 1.0 범위로 클리핑)
     risk_score_val = np.clip(type_w + short_term_weight + (0.5 if is_trust_owner else 0), 0, 1.0)
 
     # 4. 건물 연식 계산
     building_age = 0
     try:
         if usage_approval_date:
-            # 1. 입력값 문자열 변환 및 정리
             raw_date = str(usage_approval_date).strip()
-
-            # 2. 온점(.)이나 슬래시(/)를 하이픈(-)으로 통일하고, 끝에 붙은 특수문자 제거
-            # 예: "2001.5.3." -> "2001-5-3"
             clean_date = raw_date.replace('.', '-').replace('/', '-').strip('-')
-
-            # 3. Pandas의 강력한 파서 사용 (알아서 YYYY-MM-DD 등을 해석해줌)
             dt = pd.to_datetime(clean_date, errors='coerce')
 
             if pd.notnull(dt):
                 building_age = (datetime.now() - dt).days / 365.25
             else:
-                # 변환 실패 시 (예: "없음" 등)
                 building_age = 10
     except:
-        building_age = 10  # 파싱 실패 시 기본값
+        building_age = 10
 
     # 5. One-Hot Encoding (건물 유형)
     type_dict = {'type_APT': 0, 'type_OFFICETEL': 0, 'type_VILLA': 0, 'type_ETC': 0}
@@ -88,23 +81,26 @@ def calculate_risk_features(
     else:
         type_dict['type_ETC'] = 1
 
-    # 피처 계산 로직 활성화
-    # 100세대 미만이면 나홀로/소규모 단지로 판단 (위험 가중)
+    # 6. 소규모 단지 여부
     is_micro_complex = 1 if household_count < 100 else 0
 
-    # 6. 최종 딕셔너리 조립
+    # 7. 최종 딕셔너리 조립
+    # 참고용 수치(total_risk_ratio 등)는 별도 키로 보관해 API 응답에서 활용 가능
     features = {
+        # --- TRAIN_FEATURES (모델 입력) ---
         'jeonse_ratio': jeonse_ratio,
-        'hug_risk_ratio': hug_risk_ratio,
-        'total_risk_ratio': total_risk_ratio,
-        'estimated_loan_ratio': risk_score_val,
         'building_age': building_age,
         'is_illegal': is_illegal,
-        'is_micro_complex': is_micro_complex,  # (입력값 없으면 나홀로 1)
+        'is_micro_complex': is_micro_complex,
         'is_trust_owner': is_trust_owner,
         'short_term_weight': short_term_weight,
+
+        # --- 참고용 수치 (모델 입력 아님, API 응답 details에 활용) ---
+        '_ref_total_risk_ratio': total_risk_ratio,
+        '_ref_hug_risk_ratio': hug_risk_ratio,
+        '_ref_estimated_loan_ratio': risk_score_val,
     }
-    features.update(type_dict)  # 원핫 인코딩 합치기
+    features.update(type_dict)
 
     return features
 

@@ -555,11 +555,11 @@ async def _run_prediction_task(
         logger.info(f"[Task {task_id[:8]}] 결과 캐싱...")
 
         # 에러 응답이면 FAILED로 처리
-        result_code = result.get("meta", {}).get("code", 200)
-        if result_code != 200:
+        error_info = result.get("_error")
+        if error_info:
             await set_task_status(
                 task_id, TaskStatus.FAILED, progress=100, result=result,
-                error=result.get("meta", {}).get("message", "분석 실패")
+                error=error_info.get("message", "분석 실패")
             )
             return
 

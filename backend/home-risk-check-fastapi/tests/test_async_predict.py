@@ -73,8 +73,9 @@ class TestAsyncPredictSubmission:
              patch('app.main.validate_document_match',
                    return_value=(True, "OK", {'confidence': 0.95, 'errors': [], 'match_scores': {}})), \
              patch('app.main.predict_risk_with_ocr', return_value={
-                 "meta": {"code": 200, "message": "완료", "timestamp": datetime.now().isoformat()},
-                 "data": {"risk_score": 35.0, "risk_level": "SAFE"}
+                 "address": "인천광역시 부평구 삼산동 167-15",
+                 "risk_score": 35.0,
+                 "risk_level": "SAFE"
              }), \
              patch('app.main.set_cached_result', new_callable=AsyncMock):
 

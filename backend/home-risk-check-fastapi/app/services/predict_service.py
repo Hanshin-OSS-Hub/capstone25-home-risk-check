@@ -253,34 +253,28 @@ def predict_risk_with_ocr(
 
         # 10. 응답 생성
         return {
-            "meta": {
-                "code": 200,
-                "message": "전세사기 위험도 분석 완료",
-                "timestamp": datetime.now().isoformat()
+            "address": address,
+            "deposit": int(deposit_manwon * 10000),
+            "market_price": int(market_price * 10000),
+            "price_source": price_source,
+
+            "risk_score": round(prob * 100, 1),
+            "risk_level": risk_level,
+            "major_risk_factors": risk_factors,
+
+            "hug_result": hug_result,
+
+            "details": {
+                "jeonse_ratio": round(features.get('jeonse_ratio', 0) * 100, 1),
+                "senior_debt": int(ocr_features.get('real_debt_manwon', 0) * 10000),
+                "is_illegal_building": bool(ocr_features.get('is_illegal', 0)),
+                "is_trust": bool(ocr_features.get('is_trust_owner', 0)),
+                "building_age": round(features.get('building_age', 0), 1),
+                "ownership_duration_months": ocr_features.get('ownership_duration_months')
             },
-            "data": {
-                "address": address,
-                "deposit": int(deposit_manwon * 10000),
-                "market_price": int(market_price * 10000),
-                "price_source": price_source,
 
-                "risk_score": round(prob * 100, 1),
-                "risk_level": risk_level,
-                "major_risk_factors": risk_factors,
+            "recommendations": recommendations,
 
-                "hug_result": hug_result,
-
-                "details": {
-                    "jeonse_ratio": round(features.get('jeonse_ratio', 0) * 100, 1),
-                    "senior_debt": int(ocr_features.get('real_debt_manwon', 0) * 10000),
-                    "is_illegal_building": bool(ocr_features.get('is_illegal', 0)),
-                    "is_trust": bool(ocr_features.get('is_trust_owner', 0)),
-                    "building_age": round(features.get('building_age', 0), 1),
-                    "ownership_duration_months": ocr_features.get('ownership_duration_months')
-                },
-
-                "recommendations": recommendations
-            },
             "_debug_info": {
                 "pnu": pnu,
                 "features_used": {k: v for k, v in features.items()
@@ -345,14 +339,11 @@ def _get_building_info(
 def _error_response(code: int, message: str, detail: str) -> Dict[str, Any]:
     """에러 응답 생성"""
     return {
-        "meta": {
+        "_error": {
             "code": code,
             "message": message,
-            "timestamp": datetime.now().isoformat()
-        },
-        "errors": [
-            {"field": "prediction", "message": detail}
-        ]
+            "detail": detail
+        }
     }
 
 

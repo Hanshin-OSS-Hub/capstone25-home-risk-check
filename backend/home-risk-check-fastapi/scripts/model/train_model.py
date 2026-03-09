@@ -9,8 +9,12 @@ import joblib
 # Scikit-Learn
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.metrics import (
+    accuracy_score, roc_auc_score,
+    classification_report, confusion_matrix
+)
 from app.services.feature_service import TRAIN_FEATURES
+
 # ---------------------------------------------------------
 # 1. 프로젝트 경로 및 폰트 설정
 # ---------------------------------------------------------
@@ -44,7 +48,6 @@ def train_and_save_model():
     # 2. 데이터 로드
     # ---------------------------------------------------------
     print("\n>> 1. 데이터 로드 및 전처리 중...")
-    # data_processor에서 가공된 데이터(가짜 빚이 제거된 클린 데이터) 로드
     df = load_and_engineer_features()
 
     if df.empty:
@@ -54,49 +57,55 @@ def train_and_save_model():
     # ---------------------------------------------------------
     # 3. 추가 전처리 (One-Hot Encoding)
     # ---------------------------------------------------------
-    # simple_type (APT, VILLA 등)을 원-핫 인코딩 -> type_APT, type_VILLA 생성
     if 'simple_type' in df.columns:
         df = pd.get_dummies(df, columns=['simple_type'], prefix='type')
 
     # ---------------------------------------------------------
-    # 4. [핵심 수정] 정답지(Label) 생성: 'is_fraud'
+    # 4. 정답지(Label) 생성: 'is_fraud'
     # ---------------------------------------------------------
-    # 데이터가 'Clean'해졌으므로, 라벨링 기준을 '잠재적 위험'까지 포함하도록 넓혀야 함
 
-    # 조건 1: HUG 보증보험 가입 불가 (전세가율이 너무 높음)
-    cond_hug = df['hug_risk_ratio'] > 1.0
+    # 방어: 필수 원천 컬럼 존재 여부 확인
+    required_cols = ['RENT_PRICE', 'ESTIMATED_MARKET_PRICE']
+    missing_cols = [c for c in required_cols if c not in df.columns]
+    if missing_cols:
+        print(f"❌ 라벨 생성에 필요한 컬럼 없음: {missing_cols}")
+        return
 
-    # 조건 2: 깡통전세 위험군 (전세가율 80% 이상) - 통상적 위험 기준
-    # (이전에는 가짜 빚을 더해서 1.0을 넘겼지만, 이제는 순수 전세가율이므로 0.8로 잡음)
-    cond_debt = df['total_risk_ratio'] >= 0.8
+    # 원천값으로 직접 비율 계산 (파생 피처 컬럼 사용 안 함)
+    raw_jeonse_ratio = df['RENT_PRICE'] / df['ESTIMATED_MARKET_PRICE'].replace(0, np.nan)
+    raw_gap          = df['ESTIMATED_MARKET_PRICE'] - df['RENT_PRICE']
 
-    # 조건 3: 복합 위험군 (전세가율 70% 이상이면서 + 정성적 위험 점수(estimated_loan_ratio)가 높음)
-    # 즉, 시세 대비 전세가 70%인데 집주인이 신탁이거나 건물이 근생이면 위험으로 간주
-    cond_complex = (df['total_risk_ratio'] >= 0.7) & (df['estimated_loan_ratio'] >= 0.3)
+    # 조건 1: 깡통전세 (전세가율 80% 이상) - 원천값 기반
+    cond_high_ratio = raw_jeonse_ratio >= 0.8
 
-    # 2) 정성적 위험 반영
-    # "전세가율이 70%만 넘어도(0.7), 집주인이 신탁(is_trust_owner)이면 위험하다"라고 가르침
-    cond_trust_risk = (df['total_risk_ratio'] >= 0.7) & (df['is_trust_owner'] == 1)
+    # 조건 2: 무자본 갭투자 의심 (매매가 - 전세가 1,000만원 미만) - 원천값 기반
+    cond_gap = raw_gap < 1000
 
-    # "전세가율이 70%만 넘어도, 집주인이 단기 투기꾼(short_term)이면 위험하다"
-    cond_short_term = (df['total_risk_ratio'] >= 0.7) & (df['short_term_weight'] > 0)
-
-    # 조건 4: 위반건축물
+    # 조건 3: 위반건축물 (사실(fact) 기반 단독 조건 - 피처와 겹쳐도 정보 자체가 다름)
     cond_illegal = df['is_illegal'] == 1
 
-    # 조건 5: 무자본 갭투자 의심 (매매가와 전세가 차이가 너무 적음)
-    gap_investment_risk = (df['ESTIMATED_MARKET_PRICE'] - df['RENT_PRICE']) < 1000  # 1,000만원 미만 갭
+    # 조건 4: 복합 위험 - 전세가율 70% 이상 + 신탁 소유
+    cond_trust_complex = (raw_jeonse_ratio >= 0.7) & (df['is_trust_owner'] == 1)
 
-    df['is_fraud'] = (cond_trust_risk | cond_short_term |cond_hug | cond_debt | cond_complex | cond_illegal | gap_investment_risk).astype(int)
+    # 조건 5: 복합 위험 - 전세가율 70% 이상 + 단기 소유
+    cond_short_complex = (raw_jeonse_ratio >= 0.7) & (df['short_term_weight'] > 0)
+
+    df['is_fraud'] = (
+        cond_high_ratio |
+        cond_gap        |
+        cond_illegal    |
+        cond_trust_complex |
+        cond_short_complex
+    ).astype(int)
 
     total_cnt = len(df)
     fraud_cnt = df['is_fraud'].sum()
-    safe_cnt = total_cnt - fraud_cnt
+    safe_cnt  = total_cnt - fraud_cnt
 
     print(f"\n[데이터 분포 확인]")
-    print(f"   전체 데이터: {total_cnt}건")
+    print(f"   전체 데이터       : {total_cnt}건")
     print(f"   위험(Fraud) 레이블: {fraud_cnt}건 ({fraud_cnt / total_cnt * 100:.1f}%)")
-    print(f"   안전(Safe)  레이블: {safe_cnt}건")
+    print(f"   안전(Safe)  레이블: {safe_cnt}건 ({safe_cnt / total_cnt * 100:.1f}%)")
 
     if fraud_cnt < 10 or safe_cnt < 10:
         print("⚠️ 경고: 데이터 불균형이 너무 심하거나 샘플이 부족하여 학습 효과가 낮을 수 있습니다.")
@@ -106,14 +115,9 @@ def train_and_save_model():
     # ---------------------------------------------------------
     print(f"\n>> 피처 엔지니어링 모듈의 기준을 따릅니다.")
 
-    # [핵심 수정] 하드코딩된 리스트 대신, 공통 변수 사용!
-    # 이렇게 해야 predict.py와 train_model.py가 서로 다른 컬럼을 바라보는 사고를 막습니다.
     target_features = TRAIN_FEATURES
-
-    # 실제 데이터프레임에 존재하는 컬럼만 최종 선택 (방어 코드)
     feature_cols = [f for f in target_features if f in df.columns]
 
-    # 만약 feature_cols 개수가 TRAIN_FEATURES보다 적으면 경고
     if len(feature_cols) != len(TRAIN_FEATURES):
         missing = set(TRAIN_FEATURES) - set(feature_cols)
         print(f"⚠️ [주의] 일부 피처가 누락되었습니다: {missing}")
@@ -123,7 +127,6 @@ def train_and_save_model():
     X = df[feature_cols]
     y = df['is_fraud']
 
-    # 데이터가 너무 적으면 분리 없이 전체 학습 (테스트용)
     if len(df) < 50:
         print("⚠️ 데이터가 50건 미만입니다. train/test 분리 없이 전체 데이터로 학습합니다.")
         X_train, X_test, y_train, y_test = X, X, y, y
@@ -141,9 +144,9 @@ def train_and_save_model():
     # ---------------------------------------------------------
     print("\n>> 2. 모델 학습 수행 (Random Forest)...")
     rf_model = RandomForestClassifier(
-        n_estimators=200,  # 트리 개수 늘림
+        n_estimators=200,
         max_depth=10,
-        min_samples_leaf=2,  # 과적합 방지
+        min_samples_leaf=2,
         class_weight='balanced',
         random_state=42,
         n_jobs=-1
@@ -152,24 +155,43 @@ def train_and_save_model():
     print("   학습 완료!")
 
     # ---------------------------------------------------------
-    # 7. 성능 평가
+    # 7. 성능 평가 - 지표 보강
     # ---------------------------------------------------------
     print("\n>> 3. 성능 평가 결과")
     y_pred = rf_model.predict(X_test)
 
-    # ROC-AUC (클래스 2개 이상일 때만)
+    # 기본 지표
+    acc = accuracy_score(y_test, y_pred)
+    print(f"   정확도(Accuracy): {acc:.4f}")
+
+    # ROC-AUC
     roc = 0.0
     try:
         if len(np.unique(y_test)) > 1:
             y_pred_proba = rf_model.predict_proba(X_test)[:, 1]
             roc = roc_auc_score(y_test, y_pred_proba)
+            print(f"   ROC-AUC 점수    : {roc:.4f}")
     except Exception as e:
         print(f"   (ROC 계산 건너뜀: {e})")
 
-    acc = accuracy_score(y_test, y_pred)
+    # Precision / Recall / F1 - 핵심 지표
+    print("\n   [상세 분류 리포트]")
+    print(classification_report(y_test, y_pred, target_names=['안전(0)', '위험(1)']))
 
-    print(f"   정확도(Accuracy): {acc:.4f}")
-    print(f"   ROC-AUC 점수: {roc:.4f}")
+    # Confusion Matrix
+    cm = confusion_matrix(y_test, y_pred)
+    print("   [Confusion Matrix]")
+    print(f"   실제\\예측   안전  위험")
+    print(f"   안전(0)  {cm[0][0]:5d} {cm[0][1]:5d}   ← 안전인데 위험으로 예측 (FP)")
+    print(f"   위험(1)  {cm[1][0]:5d} {cm[1][1]:5d}   ← 위험인데 안전으로 예측 (FN, 치명적)")
+
+    # Recall 경고
+    from sklearn.metrics import recall_score
+    recall = recall_score(y_test, y_pred)
+    if recall < 0.7:
+        print(f"\n   ⚠️  위험 Recall: {recall:.4f} — 실제 위험 매물을 {(1-recall)*100:.1f}% 놓치고 있음")
+    else:
+        print(f"\n   ✅  위험 Recall: {recall:.4f}")
 
     # ---------------------------------------------------------
     # 8. 결과 저장
@@ -187,12 +209,14 @@ def train_and_save_model():
     try:
         importances = rf_model.feature_importances_
         indices = np.argsort(importances)[::-1]
-
-        # 상위 10개만 표시
         top_n = min(10, len(feature_cols))
 
         plt.figure(figsize=(10, 6))
-        sns.barplot(x=importances[indices][:top_n], y=np.array(feature_cols)[indices][:top_n], palette='viridis')
+        sns.barplot(
+            x=importances[indices][:top_n],
+            y=np.array(feature_cols)[indices][:top_n],
+            palette='viridis'
+        )
         plt.title("AI 모델 중요 변수 (Top Factors)")
         plt.xlabel("중요도 (Importance)")
         plt.tight_layout()
@@ -202,6 +226,23 @@ def train_and_save_model():
         print(f"   -> 그래프 저장 완료: {plot_path}")
     except Exception as e:
         print(f"   (그래프 저장 실패: {e})")
+
+    # 3) Confusion Matrix 시각화 저장
+    try:
+        plt.figure(figsize=(6, 5))
+        sns.heatmap(
+            cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=['안전(예측)', '위험(예측)'],
+            yticklabels=['안전(실제)', '위험(실제)']
+        )
+        plt.title("Confusion Matrix")
+        plt.tight_layout()
+
+        cm_path = os.path.join(model_dir, 'confusion_matrix.png')
+        plt.savefig(cm_path)
+        print(f"   -> Confusion Matrix 저장 완료: {cm_path}")
+    except Exception as e:
+        print(f"   (Confusion Matrix 저장 실패: {e})")
 
     print("\n" + "=" * 60)
     print("✅ 학습 종료. 이제 predict.py를 실행할 수 있습니다.")

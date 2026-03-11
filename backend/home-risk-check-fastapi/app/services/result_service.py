@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 def save_prediction_result(
         pnu: str,
-        building_info_id: int,
         deposit_manwon: float,
         market_price_manwon: float,
         features: Dict[str, Any],
@@ -31,7 +30,6 @@ def save_prediction_result(
 
     Args:
         pnu: PNU
-        building_info_id: 건물 정보 ID
         deposit_manwon: 보증금 (만원)
         market_price_manwon: 시세 (만원)
         features: 분석 피처
@@ -56,7 +54,6 @@ def save_prediction_result(
     hug_safe_limit = deposit_manwon / hug_risk_ratio if hug_risk_ratio > 0 else 0
 
     params = {
-        "building_info_id": building_info_id,
         "address_key": address_key,
         "used_rent_price": deposit_manwon,
         "used_market_price": market_price_manwon,
@@ -75,15 +72,15 @@ def save_prediction_result(
 
     sql_insert = text("""
         INSERT INTO risk_analysis_result (
-            building_info_id, address_key, used_rent_price, used_market_price,
+            address_key, used_rent_price, used_market_price,
             jeonse_ratio, hug_safe_limit, hug_risk_ratio, total_risk_ratio,
             estimated_loan_amount,
-            risk_level, risk_score, ai_risk_prob, created_at
+            risk_level, risk_score, ai_risk_prob
         ) VALUES (
-            :building_info_id, :address_key, :used_rent_price, :used_market_price,
+            :address_key, :used_rent_price, :used_market_price,
             :jeonse_ratio, :hug_safe_limit, :hug_risk_ratio, :total_risk_ratio,
             :estimated_loan_amount,
-            :risk_level, :risk_score, :ai_risk_prob, NOW()
+            :risk_level, :risk_score, :ai_risk_prob
         )
     """)
 

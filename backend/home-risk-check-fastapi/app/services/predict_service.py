@@ -122,7 +122,6 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
         # 8. 결과 저장
         save_prediction_result(
             pnu=pnu_for_price,
-            building_info_id=building_info.get('building_info_id', 0),
             deposit_manwon=deposit_manwon,
             market_price_manwon=market_price,
             features=features,
@@ -245,7 +244,6 @@ def predict_risk_with_ocr(
         # 9. 결과 저장
         save_prediction_result(
             pnu=pnu,
-            building_info_id=ocr_features.get('building_info_id', 0),
             deposit_manwon=deposit_manwon,
             market_price_manwon=market_price,
             features=features,

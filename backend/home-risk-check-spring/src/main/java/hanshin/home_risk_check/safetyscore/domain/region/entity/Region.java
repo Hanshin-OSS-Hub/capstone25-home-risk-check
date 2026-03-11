@@ -66,4 +66,11 @@ public class Region {
         this.sidoNm = sidoNm;
         this.sggNm = sggNm;
     }
+
+    public void updateScores(Double accidentZ,   Double infraZ, Double crimeZ, Double finalScore) {
+        this.crimeScore = crimeZ;
+        this.accidentScore = accidentZ;
+        this.infraScore = infraZ;
+        this.safetyScore = finalScore;
+    }
 }

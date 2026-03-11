@@ -25,6 +25,10 @@ public interface RegionRepository extends JpaRepository<Region, Long> {
     @Query("SELECT r.admCode FROM Region r")
     Set<String> findAllAdmCodes();
 
+    //sidoNm과 sggNm을 조건으로 매핑하여 해당하는 행정동들의 인구를 모두 합산
+    @Query("SELECT SUM(r.population) FROM Region r WHERE r.sidoNm = :sidoNm AND r.sggNm = :sggNm")
+    Integer sumPopulationBySidoNmAndSggNm(@Param("sidoNm") String sidoNm, @Param("sggNm") String sggNm);
+
     // 이름 기반으로 특정 구에 속한 동을 한번에 업데이트
     @Transactional
     @Modifying

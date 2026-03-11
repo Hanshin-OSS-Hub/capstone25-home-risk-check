@@ -73,7 +73,6 @@ def setup_region_database():
     # 읍면동 레벨만 (시/도, 시/군/구 레벨 제외)
     is_dong_level = ~df_active['code'].str.endswith('00000')
     df_bjdong_final = df_active[is_dong_level][['sgg_code', 'bjdong_code', 'bjdong_name']].drop_duplicates().copy()
-    df_bjdong_final['ledger_last_fetched_date'] = DEFAULT_START_DATE
     print(f"총 {len(df_bjdong_final)}개의 *법정동* 코드(e.g., 11680-10300)를 추출했습니다.")
 
     # --- 4. DB에 두 테이블 저장 ---
@@ -101,11 +100,19 @@ def setup_region_database():
             dtype={
                 'sgg_code':               String(10),
                 'bjdong_code':            String(10),
-                'bjdong_name':            String(100),
-                'ledger_last_fetched_date': String(10)
+                'bjdong_name':            String(100)
             }
         )
-        print(f"성공: '{TABLE_BJDONG}' 테이블 생성이 완료되었습니다.")
+
+        # to_sql(replace)은 PK 없이 생성하므로 복합 PK 수동 추가
+        with engine.begin() as conn:
+            conn.execute(text(f"""
+                ALTER TABLE {TABLE_BJDONG}
+                    MODIFY sgg_code VARCHAR(10) NOT NULL,
+                    MODIFY bjdong_code VARCHAR(10) NOT NULL,
+                    ADD PRIMARY KEY (sgg_code, bjdong_code)
+            """))
+        print(f"성공: '{TABLE_BJDONG}' 테이블 생성 + 복합 PK (sgg_code, bjdong_code) 설정 완료")
 
     except Exception as e:
         print(f"[오류] DB 저장 실패: {e}")

@@ -308,7 +308,7 @@ def run_risk_analysis_pipeline():
 
     # --- DB 저장 ---
     df_save = df_target[[
-        'building_info_id', 'key', 'rent_price', 'est_market_price',
+        'key', 'rent_price', 'est_market_price',
         'jeonse_ratio', 'hug_safe_limit', 'hug_risk_ratio',
         'total_risk_ratio', 'est_loan_amount', 'risk_level', 'risk_score', 'ai_risk_prob'
     ]].copy()
@@ -319,7 +319,7 @@ def run_risk_analysis_pipeline():
         'est_market_price': 'used_market_price',
     }, inplace=True)
 
-    df_save['created_at'] = datetime.now()
+    df_save['analyzed_at'] = datetime.now()
     df_save = df_save.sort_values('total_risk_ratio', ascending=False).drop_duplicates(subset=['address_key'])
 
     print(f"--- 최종 저장: {len(df_save)}건 ---")

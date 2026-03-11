@@ -220,6 +220,19 @@ def init_db():
 
     with engine.begin() as conn:
         # -----------------------------------------------------
+        # 0. meta_bjdong_codes (시군구/법정동 코드 이름 매핑)
+        # -----------------------------------------------------
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS meta_bjdong_codes (
+                sgg_code VARCHAR(10) NOT NULL,
+                bjdong_code VARCHAR(10) NOT NULL,
+                bjdong_name TEXT,
+
+                PRIMARY KEY (sgg_code, bjdong_code)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """))
+
+        # -----------------------------------------------------
         # 1. building_info (건물 기본 정보 - 전유부 위주)
         # -----------------------------------------------------
         conn.execute(text("""
@@ -357,13 +370,12 @@ def init_db():
                 id INT AUTO_INCREMENT PRIMARY KEY,
 
                 address_key VARCHAR(255),
-                building_info_id INT,
 
                 used_rent_price BIGINT,
-                used_market_price DECIMAL(15, 2),
+                used_market_price BIGINT,
 
                 jeonse_ratio DECIMAL(10, 6),
-                hug_safe_limit DECIMAL(15, 2),
+                hug_safe_limit BIGINT,
                 hug_risk_ratio DECIMAL(10, 6),
                 total_risk_ratio DECIMAL(10, 6),
                 estimated_loan_amount BIGINT,

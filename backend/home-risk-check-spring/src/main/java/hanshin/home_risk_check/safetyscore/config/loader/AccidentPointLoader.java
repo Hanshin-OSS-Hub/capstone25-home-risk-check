@@ -27,7 +27,7 @@ public class AccidentPointLoader {
     private final TrafficRepository trafficRepository;
     private final FileSyncService fileSyncService;
 
-    public void loadData() {
+    public boolean loadData() {
         try {
 
             Resource[] resources = new PathMatchingResourcePatternResolver()
@@ -35,7 +35,7 @@ public class AccidentPointLoader {
 
             if (resources.length == 0) {
                 log.warn("CSV 파일을 찾을 수 없습니다.");
-                return;
+                return false;
             }
 
             Resource resource = resources[0];
@@ -46,7 +46,7 @@ public class AccidentPointLoader {
 
             if (!isChanged) {
                 log.info("교통사고 다발지역 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
-                return;
+                return false;
             }
 
             log.info("교통사고 다발지역 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
@@ -141,9 +141,11 @@ public class AccidentPointLoader {
 
                 log.info("교통사고 다발지역 데이터 동기화 완료. 총 {} 건이 추가되었습니다. ", insertCount);
 
+                return true;
             }
         } catch (Exception e) {
             log.error("교통사고 다발지역 데이터 로딩 중 오류 발생", e);
+            return false;
         }
     }
 }

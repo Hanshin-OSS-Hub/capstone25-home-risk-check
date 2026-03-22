@@ -28,14 +28,14 @@ public class FireStationDataLoader {
     private final FileSyncService fileSyncService;
 
     @Transactional
-    public void loadData() {
+    public boolean loadData() {
         try {
             Resource[] resources = new PathMatchingResourcePatternResolver()
                     .getResources("classpath:safetyscore/fire_station/*.csv");
 
             if (resources.length == 0) {
                 log.warn("소방서 CSV 파일을 찾을 수 없습니다.");
-                return;
+                return false;
             }
 
             Resource resource = resources[0];
@@ -45,7 +45,7 @@ public class FireStationDataLoader {
 
             if (!isChanged) {
                 log.info("소방서 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
-                return;
+                return false;
             }
 
             log.info("소방서 CSV 파일 변경 감지. 데이터 동기화를 시작합니다.");
@@ -119,10 +119,12 @@ public class FireStationDataLoader {
 
                 fileSyncService.updateSyncHistory(filename, fileHash);
                 log.info("소방서 데이터 자동 좌표 변환 및 동기화 완료. 총 {}건 추가되었습니다.", insertCount);
+                return true;
 
             }
         } catch (Exception e) {
             log.error("소방서 데이터 로딩 중 오류 발생", e);
+            return false;
         }
     }
 

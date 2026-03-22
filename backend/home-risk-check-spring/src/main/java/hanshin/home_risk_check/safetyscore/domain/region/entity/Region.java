@@ -26,12 +26,6 @@ public class Region {
     @Column(nullable = false)
     private MultiPolygon geometry;
 
-    @Column(name = "sido_nm", length = 50)
-    private String sidoNm; // 시도명 (예: 서울특별시)
-
-    @Column(name = "sgg_nm", length = 50)
-    private String sggNm;  // 시군구명 (예: 종로구)
-
     @Column(name = "population")
     private Integer population; //총 인구수 //null 처리를 위해 Integer 사용
 
@@ -62,10 +56,6 @@ public class Region {
         this.populationStatsYm = populationStatsYm;
     }
 
-    public void updateRegionNames(String sidoNm, String sggNm) {
-        this.sidoNm = sidoNm;
-        this.sggNm = sggNm;
-    }
 
     public void updateScores(Double accidentZ,   Double infraZ, Double crimeZ, Double finalScore) {
         this.crimeScore = crimeZ;

@@ -26,7 +26,7 @@ public class CrimeStatsLoader {
     private final FileSyncService fileSyncService;
 
     @Transactional
-    public void loadData() {
+    public boolean loadData() {
         try {
             //  CSV 파일 찾기
             Resource[] resources = new PathMatchingResourcePatternResolver()
@@ -34,7 +34,7 @@ public class CrimeStatsLoader {
 
             if (resources.length == 0) {
                 log.warn("범죄 통계 CSV 파일을 찾을 수 없습니다.");
-                return;
+                return false;
             }
 
             Resource resource = resources[0];
@@ -45,7 +45,7 @@ public class CrimeStatsLoader {
 
             if (!isChanged) {
                 log.info("범죄 통계 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
-                return; // 파일이 안 변했으면 바로 종료
+                return false ; // 파일이 안 변했으면 바로 종료
             }
 
             log.info("범죄 통계 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
@@ -83,15 +83,10 @@ public class CrimeStatsLoader {
                         //  세종시 예외처리 (DB: 세종특별자치시_세종특별자치시)
                         if (parts[0].trim().equals("세종시")) {
                             sidoNm = "세종특별자치시";
-                            sggNm = "세종특별자치시";
+                            sggNm = "세종시";
                         } else {
                             sidoNm = convertSidoName(regionParts[0]);
                             sggNm = regionParts[1];
-                        }
-
-                        // 부산광역시 진구 예외처리
-                        if (sidoNm.equals("부산광역시") && sggNm.equals("부산진구")) {
-                            sggNm = "진구";
                         }
 
                         // 파싱
@@ -110,7 +105,25 @@ public class CrimeStatsLoader {
                             statsToUpdate.add(targetStat);
                             updateCount++;
                         } else {
-                            log.warn("DB에 매칭되는 지역이 없어 건너뜁니다: {}", key);
+                            boolean found = false;
+
+                            // 맵 전체를 훑으면서 "경기도_고양시 "로 시작하는 모든 지역을 조회
+                            for (Map.Entry<String, SggSafetyStats> entry : statsMap.entrySet()) {
+                                String dbKey = entry.getKey(); // 예: "경기도_고양시 덕양구"
+
+                                // "경기도_고양시 " (뒤에 띄어쓰기 한 칸 포함)로 시작하는지 확인
+                                if (dbKey.startsWith(sidoNm + "_" + sggNm + " ")) {
+                                    entry.getValue().updateCrimeStats(robbery, theft, murder, sexual, violence);
+                                    statsToUpdate.add(entry.getValue());
+                                    updateCount++;
+                                    found = true;
+                                }
+                            }
+
+                            if (!found) {
+                                log.warn("DB에 매칭되는 지역이 없어 건너뜁니다: {}", key);
+                            }
+
                         }
 
                     } catch (Exception e) {
@@ -127,9 +140,11 @@ public class CrimeStatsLoader {
             }
 
             fileSyncService.updateSyncHistory(filename, fileHash);
+            return true;
 
         } catch (Exception e) {
             log.error("범죄 데이터 로드 중 치명적 오류 발생", e);
+            return false;
         }
     }
 

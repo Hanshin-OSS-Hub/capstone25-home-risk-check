@@ -28,7 +28,7 @@ public class PoliceDataLoader {
     private final FileSyncService fileSyncService;
 
     @Transactional
-    public void loadData() {
+    public boolean loadData() {
         try {
             // 파일 가져오기
             Resource[] resources = new PathMatchingResourcePatternResolver()
@@ -36,7 +36,7 @@ public class PoliceDataLoader {
 
             if (resources.length == 0){
                 log.warn("CSV 파일이 없습니다.");
-                return;
+                return false;
             }
 
             String sql = "INSERT INTO police_stations (name, type, address, geometry) " +
@@ -69,11 +69,15 @@ public class PoliceDataLoader {
 
             if (totalProcessedCount > 0) {
                 log.info("경찰관서 데이터  동기화 완료. 총 {}건이 추가 되었습니다.", totalProcessedCount);
+                return true;
             }
+
+            return false;
+
         } catch (Exception e) {
             log.error("경찰서 데이터 로드 중 오류 발생");
+            return false;
         }
-
     }
 
     /**

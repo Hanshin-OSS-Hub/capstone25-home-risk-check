@@ -30,7 +30,7 @@ public class RegionDataLoader {
     private final FileSyncService fileSyncService;
 
     @Transactional
-    public void loadData(){
+    public boolean loadData(){
         try {
 
             Resource[] resources = new PathMatchingResourcePatternResolver()
@@ -38,7 +38,7 @@ public class RegionDataLoader {
 
             if(resources.length == 0) {
                 log.warn("CSV 파일을 찾을수 없습니다.");
-                return;
+                return false;
             }
 
             Resource resource = resources[0];
@@ -49,7 +49,7 @@ public class RegionDataLoader {
 
             if (!isChanged) {
                 log.info("지역 데이터 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
-                return; // 파일이 안 변했으면 바로 종료
+                return false; // 파일이 안 변했으면 바로 종료
             }
 
             log.info("지역 데이터 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
@@ -79,7 +79,7 @@ public class RegionDataLoader {
                     if(data.length >= 4) {
                         // ""를 빈 문자열로 변환
                         String wktString = data[0].replace("\"", ""); // 공간 데이터
-                        String admCode = data[1].replace("\"", ""); // 행정동 코드
+                        String admCode = data[2].replace("\"", ""); // 행정동 코드
                         String admNm = data[3].replace("\"", ""); // 행정동 이름
 
                         nameMap.put(admCode, admNm);
@@ -133,9 +133,11 @@ public class RegionDataLoader {
             fileSyncService.updateSyncHistory(filename, fileHash);
 
             log.info("지역 데이터 동기화 완료. 총 {} 건이 추가 되었습니다.", processedCount);
+            return true;
 
         } catch (Exception e){
             log.error("행정동 데이터 로드 중 치명적 오류 발생", e);
+            return false;
         }
     }
 

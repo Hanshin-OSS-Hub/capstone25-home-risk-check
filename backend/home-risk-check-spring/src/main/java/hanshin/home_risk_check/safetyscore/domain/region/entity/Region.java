@@ -57,7 +57,7 @@ public class Region {
     }
 
 
-    public void updateScores(Double accidentZ,   Double infraZ, Double crimeZ, Double finalScore) {
+    public void updateScores( Double crimeZ ,Double accidentZ, Double infraZ, Double finalScore) {
         this.crimeScore = crimeZ;
         this.accidentScore = accidentZ;
         this.infraScore = infraZ;

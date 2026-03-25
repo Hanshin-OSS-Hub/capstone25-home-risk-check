@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DataSyncCoordinator {
 
+    private final SpatialRegionIndex spatialRegionIndex;
+
     private final RegionDataLoader regionDataLoader;
     private final PoliceDataLoader policeDataLoader;
     private final FireStationDataLoader fireDataLoader;
@@ -40,14 +42,19 @@ public class DataSyncCoordinator {
         prepareSpatialIndexes();
 
         // 각 로더 실행 및 변경 사항 확인
+        // 기초 점수 계산용
         boolean isRegionChanged = regionDataLoader.loadData();
+
+        spatialRegionIndex.init();
         boolean isPoliceChanged = policeDataLoader.loadData();
         boolean isFireChanged = fireDataLoader.loadData();
         boolean isCctvChanged = cctvDataLoader.loadData();
-        boolean isAccidentPointChanged = accidentPointLoader.loadData();
         boolean isAccidentStatsChanged = accidentStatsLoader.loadData();
         boolean isCrimeChanged = crimeStatsLoader.loadData();
         boolean isPopulationChanged = populationDataLoader.loadData();
+
+        // 실시간 유저 검색용
+        boolean isAccidentPointChanged = accidentPointLoader.loadData();
 
         // 기초 지역 교통사고 통계
         if (isAccidentStatsChanged || sggSafetyStatsRepository.existsByAccCntIsNull()) {
@@ -57,8 +64,22 @@ public class DataSyncCoordinator {
             log.info("모든 지역의 사고 데이터가 존재합니다. TAAS API 호출을 건너뜁니다.");
         }
 
+        boolean isBaselineDataChanged = isRegionChanged || isPoliceChanged || isFireChanged ||
+                isCctvChanged || isAccidentStatsChanged ||
+                isCrimeChanged || isPopulationChanged;
+
+        //최종 계산
+        if (isBaselineDataChanged || regionRepository.existsBySafetyScoreIsNull()) {
+            log.info("점수 산출에 필요한 기초 데이터 변경 감지 -> 전체 안전 점수 재계산 시작");
+            safetyScoreService.calculateAllRegionScores();
+        } else {
+            log.info("점수 산출에 영향을 주는 데이터 변경이 없습니다. 계산을 건너뜁니다.");
+        }
+
         log.info("전체 데이터 동기화 및 점수 산출 프로세스 종료");
     }
+
+
 
     private void prepareSpatialIndexes() {
         try {

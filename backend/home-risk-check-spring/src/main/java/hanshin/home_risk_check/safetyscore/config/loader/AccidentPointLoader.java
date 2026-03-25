@@ -1,10 +1,15 @@
 package hanshin.home_risk_check.safetyscore.config.loader;
 
+import hanshin.home_risk_check.safetyscore.config.SpatialRegionIndex;
 import hanshin.home_risk_check.safetyscore.domain.accident.repository.TrafficRepository;
 import hanshin.home_risk_check.safetyscore.infra.api.KakaoApiCaller;
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.*;
+import org.locationtech.jts.index.strtree.STRtree;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,6 +31,10 @@ public class AccidentPointLoader {
     private final JdbcTemplate jdbcTemplate;
     private final TrafficRepository trafficRepository;
     private final FileSyncService fileSyncService;
+
+    private final SpatialRegionIndex spatialRegionIndex;
+
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
     public boolean loadData() {
         try {
@@ -50,11 +59,10 @@ public class AccidentPointLoader {
             }
 
             log.info("교통사고 다발지역 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
-
             Set<String> existingAddresses = trafficRepository.findAllRawAddresses();
 
             // API호출을 적게 하기위해 이미 주소를 알고 있는 경우 update만
-            String insertSql = "INSERT INTO traffic_accidents (raw_address, standard_address, adm_cd, accident_count, death_count, geometry) " +
+            String insertSql = "INSERT INTO traffic_accidents (raw_address, standard_address, adm_code, accident_count, death_count, geometry) " +
                     "VALUES (?, ?, ?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat'))";
             String updateSql = "UPDATE traffic_accidents SET accident_count = ?, death_count = ? WHERE raw_address = ?";
 
@@ -101,12 +109,21 @@ public class AccidentPointLoader {
                     }
 
                     if (kakaoDoc != null) {
-                        String pointWkt = String.format("POINT(%s %s)", kakaoDoc.getX(), kakaoDoc.getY());
+                        double lat = Double.parseDouble(kakaoDoc.getY());
+                        double lon = Double.parseDouble(kakaoDoc.getX());
+                        String pointWkt = String.format("POINT(%s %s)", lon, lat);
+
+                        Point accidentPoint = geometryFactory.createPoint(new Coordinate(lon, lat));
+                        String admCode = spatialRegionIndex.findAdmCode(accidentPoint);
+
+                        if (admCode == null) {
+                            admCode = "";
+                        }
 
                         insertBatchArgs.add(new Object[]{
                                 rawAddress, //주소 원문
                                 kakaoDoc.getAddress_name(), // 카카오가 찾아준 정제된 주소
-                                "", // 카카오 키워드 검색엔 adm_cd가 없으므로 빈값 처리 (필요시 추후 보완)
+                                admCode,
                                 accidentCount, // 사고 건수
                                 deathCount, // 사망자 수
                                 pointWkt // getCoordinate로 찾은 위경도
@@ -148,4 +165,5 @@ public class AccidentPointLoader {
             return false;
         }
     }
+
 }

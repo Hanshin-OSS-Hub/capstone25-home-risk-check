@@ -1,6 +1,7 @@
 package hanshin.home_risk_check.safetyscore.config.loader;
 
 
+import hanshin.home_risk_check.safetyscore.config.SpatialRegionIndex;
 import hanshin.home_risk_check.safetyscore.domain.police.entity.PoliceStation;
 import hanshin.home_risk_check.safetyscore.domain.police.repository.PoliceStationRepository;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,6 +29,9 @@ public class PoliceDataLoader {
     private final JdbcTemplate jdbcTemplate;
     private final FileSyncService fileSyncService;
 
+    private final SpatialRegionIndex spatialRegionIndex;
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
     @Transactional
     public boolean loadData() {
         try {
@@ -39,10 +44,10 @@ public class PoliceDataLoader {
                 return false;
             }
 
-            String sql = "INSERT INTO police_stations (name, type, address, geometry) " +
-                    "VALUES (?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
+            String sql = "INSERT INTO police_stations (name, type, address,adm_code , geometry) " +
+                    "VALUES (?, ?, ?, ? , ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "type = VALUES(type), address = VALUES(address), geometry = VALUES(geometry)";
+                    "type = VALUES(type), address = VALUES(address), adm_code = VALUES(adm_code), geometry = VALUES(geometry)";
 
             int totalProcessedCount = 0;
 
@@ -139,10 +144,22 @@ public class PoliceDataLoader {
                     // 한국 위도 범위를 벗어난 잘못된 데이터 좌표 걸러냄
                     if (lat < 33 || lat > 39) continue;
 
+                    Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
+                    String admCd = spatialRegionIndex.findAdmCode(point);
+                    if (admCd == null) {
+                        admCd = "";
+                    }
+
                     // WKT 문자열 형식으로 변환
                     String pointWkt = "POINT(" + lon + " " + lat + ")";
 
-                    batchArgs.add(new Object[]{name, type, address, pointWkt});
+                    batchArgs.add(new Object[]{
+                            name,
+                            type,
+                            address,
+                            admCd,
+                            pointWkt
+                    });
                     processedCount++;
 
                     if (batchArgs.size() == 1000) {

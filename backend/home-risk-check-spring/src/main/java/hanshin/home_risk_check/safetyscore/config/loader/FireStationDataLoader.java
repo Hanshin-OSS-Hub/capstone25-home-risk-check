@@ -1,9 +1,14 @@
 package hanshin.home_risk_check.safetyscore.config.loader;
 
+import hanshin.home_risk_check.safetyscore.config.SpatialRegionIndex;
 import hanshin.home_risk_check.safetyscore.infra.api.KakaoApiCaller;
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,6 +31,9 @@ public class FireStationDataLoader {
     private final KakaoApiCaller kakaoApiCaller;
     private final JdbcTemplate jdbcTemplate;
     private final FileSyncService fileSyncService;
+
+    private final SpatialRegionIndex spatialRegionIndex;
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
     @Transactional
     public boolean loadData() {
@@ -50,10 +58,10 @@ public class FireStationDataLoader {
 
             log.info("소방서 CSV 파일 변경 감지. 데이터 동기화를 시작합니다.");
 
-            String insertSql = "INSERT INTO fire_stations (name, address, geometry) " +
-                    "VALUES (?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
+            String insertSql = "INSERT INTO fire_stations (name, address, adm_code, geometry) " +
+                    "VALUES (?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "address = VALUES(address), geometry = VALUES(geometry)";
+                    "address = VALUES(address), adm_code = VALUES(adm_code), geometry = VALUES(geometry)";
 
             Map<String, String> addressFixMap = getAddressFixMap();
             List<Object[]> insertBatchArgs = new ArrayList<>();
@@ -87,12 +95,23 @@ public class FireStationDataLoader {
                     }
 
                     if (kakaoDoc != null) {
+
+                        double lon = Double.parseDouble(kakaoDoc.getX());
+                        double lat = Double.parseDouble(kakaoDoc.getY());
+
+                        Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
+                        String admCd = spatialRegionIndex.findAdmCode(point);
+                        if (admCd == null) {
+                            admCd = "";
+                        }
+
                         // 카카오가 찾아준 X(경도), Y(위도)로 POINT 생성
-                        String pointWkt = String.format("POINT(%s %s)", kakaoDoc.getX(), kakaoDoc.getY());
+                        String pointWkt = String.format("POINT(%s %s)", lon, lat);
 
                         insertBatchArgs.add(new Object[]{
                                 name, // 소방서 이름
                                 kakaoDoc.getAddress_name(), // 카카오가 정제해준 깔끔한 도로명/지번 주소
+                                admCd,
                                 pointWkt // 변환된 좌표
                         });
                         insertCount++;

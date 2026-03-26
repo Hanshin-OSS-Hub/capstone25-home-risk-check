@@ -53,6 +53,11 @@ export default function AnalysisPage() {
         return result.join(' ') + '원'
     }
 
+    const formatNumberWithComma = (value: string) => {
+        if (!value) return ''
+        return Number(value).toLocaleString()
+    }
+
     const handleAnalysisRequest = async () => {
         abortControllerRef.current = new AbortController()
         setIsLoading(true)
@@ -116,7 +121,7 @@ export default function AnalysisPage() {
                     </div>
                     <InputClear label="상세 주소" placeholder="예) 101동 202호" value={detailAddress}
                                 onChange={setDetailAddress}/>
-                    <InputClear label="보증금" placeholder="예) 12000000" value={deposit} onChange={(val) => {
+                    <InputClear label="보증금" placeholder="예) 12000000" value={formatNumberWithComma(deposit)} onChange={(val) => {
                         const onlyNumber = val.replace(/[^0-9]/g, '')
                         setDeposit(onlyNumber)
                     }}/>

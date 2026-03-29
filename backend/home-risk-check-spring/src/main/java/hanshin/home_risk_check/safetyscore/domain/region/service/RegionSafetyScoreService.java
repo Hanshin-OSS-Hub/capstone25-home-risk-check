@@ -33,13 +33,7 @@ public class RegionSafetyScoreService {
     private static final double POLICE_WEIGHT = 100.0; // 경찰서 1개 = 100점의 방어력
     private static final double FIRE_WEIGHT = 50.0;    // 소방서 1개 = 50점의 방어력
 
-//    /**
-//     * 교통사고 다발지역(핫스팟) 밀집도 가중치 = 4.5
-//     * - DB 통계상 다발지역 1곳 지정 시 평균 4.47건의 사고가 응집되어 발생.
-//     * - 다발지역이 존재한다는 것 자체로 평균 4.5건의 집중된 구조적 위험이
-//     *  있다는 논리적 근거에 기반하여 페널티 부여.
-//     */
-//    private static final double HOTSPOT_DENSITY_WEIGHT = 4.5;
+
 
     @Transactional
     public void calculateAllRegionScores() {
@@ -49,41 +43,40 @@ public class RegionSafetyScoreService {
         if (regions.isEmpty()) {
             return;
         }
-
         // 범죄/사고 및 인구 데이터 캐싱
         Map<String, SggSafetyStats> sggStatsMap = sggSafetyStatsRepository.findAll().stream()
-                .filter(s -> s.getAdmCode() != null)
-                .collect(Collectors.toMap(SggSafetyStats::getAdmCode, s -> s, (existing, replacement) -> existing));
+                .filter(s -> s.getSgisCode() != null)
+                .collect(Collectors.toMap(SggSafetyStats::getSgisCode, s -> s, (existing, replacement) -> existing));
         log.info("sggStatsMap 조회 완료");
 
         // 시군구 인구수
         // 8자리 Region 코드를 5자리SGG로 잘라서 조회 -> 시군구 전체 인구/면적 산출
         Map<String, Integer> sggPopulationMap = regions.stream()
-                .filter(r -> r.getAdmCode() != null && r.getAdmCode().length() >= 5)
+                .filter(r -> r.getSgisCode() != null && r.getSgisCode().length() >= 5)
                 .collect(Collectors.groupingBy(
-                        r -> r.getAdmCode().substring(0, 5),
+                        r -> r.getSgisCode().substring(0, 5),
                         Collectors.summingInt(r -> r.getPopulation() != null && r.getPopulation() > 0 ? r.getPopulation() : 0)));
         log.info("sggPopulationMap 조회 완료");
 
         Map<String, Double> sggAreaMap = regions.stream()
-                .filter(r -> r.getAdmCode() != null && r.getAdmCode().length() >= 5)
+                .filter(r -> r.getSgisCode() != null && r.getSgisCode().length() >= 5)
                 .collect(Collectors.groupingBy(
-                        r -> r.getAdmCode().substring(0, 5),
+                        r -> r.getSgisCode().substring(0, 5),
                         Collectors.summingDouble(r -> r.getGeometry() != null ? r.getGeometry().getArea() : 0.0)));
         log.info("sggAreaMap 캐싱 완료");
 
         //  CCTV 데이터 캐싱
-        Map<String, Integer> cctvMap = cctvRepository.sumCameraCountGroupedByAdmCode().stream()
+        Map<String, Integer> cctvMap = cctvRepository.sumCameraCountGroupedBySgisCode().stream()
                 .collect(Collectors.toMap(
                         row -> (String) row[0],
                         row -> row[1] != null ? ((Number) row[1]).intValue() : 0));
         log.info("cctvMap 캐싱 완료");
 
-        Map<String, Integer> policeMap = policeStationRepository.countAllGroupedByAdmCode().stream()
+        Map<String, Integer> policeMap = policeStationRepository.countAllGroupedBySgisCode().stream()
                 .collect(Collectors.toMap(row -> (String) row[0], row -> ((Number) row[1]).intValue()));
         log.info("policeMap 캐싱 완료");
 
-        Map<String, Integer> fireMap = fireStationRepository.countAllGroupedByAdmCode().stream()
+        Map<String, Integer> fireMap = fireStationRepository.countAllGroupedBySgisCode().stream()
                 .collect(Collectors.toMap(row -> (String) row[0], row -> ((Number) row[1]).intValue()));
         log.info("fireMap 캐싱 완료");
 
@@ -185,14 +178,14 @@ public class RegionSafetyScoreService {
     private double calculateCrimeRaw(Region region, Map<String, SggSafetyStats> sggStatsMap,
                                      Map<String, Integer> sggPopulationMap, Map<String, Double> sggAreaMap) {
 
-        String admCode = region.getAdmCode();
+        String sgisCode = region.getSgisCode();
 
-        if (admCode == null || admCode.length() < 5) {
+        if (sgisCode == null || sgisCode.length() < 5) {
             return 0.0;
         }
 
-        // Region의 AdmCode의 앞 5자리를 추출하여 시군구 코드로 사용
-        String sggCode = admCode.substring(0, 5);
+        // Region의 sgisCode의 앞 5자리를 추출하여 시군구 코드로 사용
+        String sggCode = sgisCode.substring(0, 5);
         SggSafetyStats sggStats = sggStatsMap.get(sggCode);
 
         if (sggStats == null) {
@@ -223,15 +216,15 @@ public class RegionSafetyScoreService {
     private double calculateInfraRaw(Region region, Map<String, Integer> cctvMap,
                                      Map<String, Integer> policeMap, Map<String, Integer> fireMap) {
 
-        String admCode = region.getAdmCode();
-        if (admCode == null) return 0.0;
+        String sgisCode = region.getSgisCode();
+        if (sgisCode == null) return 0.0;
 
         // 구역 내 경찰서 개수
-        double policeCount = policeMap.getOrDefault(admCode, 0);
+        double policeCount = policeMap.getOrDefault(sgisCode, 0);
         // 구역 내 소방서 개수
-        double fireCount = fireMap.getOrDefault(admCode, 0);
+        double fireCount = fireMap.getOrDefault(sgisCode, 0);
         // 구역 내 CCTV 카메라 총 대수
-        double cctvCount = cctvMap.getOrDefault(admCode, 0);
+        double cctvCount = cctvMap.getOrDefault(sgisCode, 0);
 
         // 가중치를 적용한 인프라 방어력 합산
         double totalInfraPower = (cctvCount * CCTV_WEIGHT)
@@ -248,12 +241,12 @@ public class RegionSafetyScoreService {
     private double calculateAccidentRaw(Region region, Map<String, SggSafetyStats> sggStatsMap,
                                         Map<String, Integer> sggPopulationMap, Map<String, Double> sggAreaMap) {
 
-        String admCode = region.getAdmCode();
-        if (admCode == null) {
+        String sgisCode = region.getSgisCode();
+        if (sgisCode == null) {
             return 0.0;
         }
 
-        String sggCode = admCode.substring(0, 5);
+        String sggCode = sgisCode.substring(0, 5);
         SggSafetyStats sggStats = sggStatsMap.get(sggCode);
 
         if (sggStats == null || sggStats.getAccCnt() == null) {

@@ -20,8 +20,8 @@ public class FireStation {
     private String name;
     private String address;
 
-    @Column(name = "adm_code")
-    private String admCode;
+    @Column(name = "sgis_code")
+    private String sgisCode;
 
     @Column(nullable = false)
     private Point geometry;

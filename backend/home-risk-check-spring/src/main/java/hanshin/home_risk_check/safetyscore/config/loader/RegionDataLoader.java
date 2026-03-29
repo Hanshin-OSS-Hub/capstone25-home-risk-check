@@ -48,11 +48,11 @@ public class RegionDataLoader {
             boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
             if (!isChanged) {
-                log.info("지역 데이터 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                log.info("[Region] 파일 변경 없음. 동기화를 건너뜁니다.");
                 return false; // 파일이 안 변했으면 바로 종료
             }
 
-            log.info("지역 데이터 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
+            log.info("[Region] 파일 변경 감지. 데이터 동기화를 시작합니다...");
 
             Map<String, String> nameMap = new HashMap<>(); //코드별 이름 저장
             Map<String, List<Geometry>> geometryMap = new HashMap<>(); // 코드별 지형 리스트 저장
@@ -79,24 +79,24 @@ public class RegionDataLoader {
                     if(data.length >= 4) {
                         // ""를 빈 문자열로 변환
                         String wktString = data[0].replace("\"", ""); // 공간 데이터
-                        String admCode = data[2].replace("\"", ""); // 행정동 코드
+                        String sgisCode = data[2].replace("\"", ""); // 행정동 코드
                         String admNm = data[3].replace("\"", ""); // 행정동 이름
 
-                        nameMap.put(admCode, admNm);
+                        nameMap.put(sgisCode, admNm);
 
                         try {
                             //WKT 문자열 -> JTS geometry 객체 변환
                             Geometry geometry = wktReader.read(wktString);
-                            geometryMap.computeIfAbsent(admCode, k -> new ArrayList<>()).add(geometry);
+                            geometryMap.computeIfAbsent(sgisCode, k -> new ArrayList<>()).add(geometry);
 
                         } catch (ParseException e) {
-                            log.error("WKT 공간 데이터 파싱 오류 (행정동 코드: {}): {}", admCode, e.getMessage());
+                            log.error("WKT 공간 데이터 파싱 오류 (행정동 코드: {}): {}", sgisCode, e.getMessage());
                         }
                     }
                 }
             }
 
-            String sql = "INSERT INTO safety_regions (adm_code, adm_nm, geometry) " +
+            String sql = "INSERT INTO safety_regions (sgis_code, adm_nm, geometry) " +
                     "VALUES (?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
                     "ON DUPLICATE KEY UPDATE " +
                     "adm_nm = VALUES(adm_nm), geometry = VALUES(geometry)";
@@ -105,8 +105,8 @@ public class RegionDataLoader {
             int processedCount = 0;
 
 
-            for (String admCode: geometryMap.keySet()){
-                List<Geometry> geometries = geometryMap.get(admCode);
+            for (String sgisCode: geometryMap.keySet()){
+                List<Geometry> geometries = geometryMap.get(sgisCode);
                 //GeometryCombiner 행정동 경계 중복 -> UnaryUnionOp로 변경
                 Geometry combined = UnaryUnionOp.union(geometries);
 
@@ -116,7 +116,7 @@ public class RegionDataLoader {
                 if (multiPolygon != null) {
                     String combinedWkt = multiPolygon.toText();
 
-                    batchArgs.add(new Object[]{admCode, nameMap.get(admCode), combinedWkt});
+                    batchArgs.add(new Object[]{sgisCode, nameMap.get(sgisCode), combinedWkt});
                     processedCount++;
 
                     if (batchArgs.size() == 1000) {
@@ -132,7 +132,7 @@ public class RegionDataLoader {
 
             fileSyncService.updateSyncHistory(filename, fileHash);
 
-            log.info("지역 데이터 동기화 완료. 총 {} 건이 추가 되었습니다.", processedCount);
+            log.info("[Region] 데이터 동기화 완료. (총 {}건 추가/업데이트)", processedCount);
             return true;
 
         } catch (Exception e){

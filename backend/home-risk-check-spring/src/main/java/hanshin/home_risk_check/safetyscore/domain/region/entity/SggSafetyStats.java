@@ -35,8 +35,8 @@ public class SggSafetyStats {
     @Column(name = "sgg_code", nullable = false)
     private String sggCode;
 
-    @Column(name = "adm_code", length = 5)
-    private String admCode; //SGIS 행정코드(5자리)
+    @Column(name = "sgisCode", length = 5)
+    private String sgisCode; // SGIS 행정코드(5자리)
 
     // 사고 통계 정보 (API 콜러가 나중에 채워줌)
     @Column(name = "acc_cnt")
@@ -88,7 +88,7 @@ public class SggSafetyStats {
         this.violenceCnt = violenceCnt;
     }
 
-    public void updateAdmCode(String admCode) {
-        this.admCode = admCode;
+    public void updateSgisCode(String sgisCode) {
+        this.sgisCode = sgisCode;
     }
 }

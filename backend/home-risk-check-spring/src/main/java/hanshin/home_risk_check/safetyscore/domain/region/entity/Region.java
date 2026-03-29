@@ -17,8 +17,8 @@ public class Region {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "adm_code", unique = true)
-    private String admCode; // 행정동 코드
+    @Column(name = "sgisCode", unique = true)
+    private String sgisCode; // 행정동 통계청 코드
 
     @Column(name = "adm_nm")
     private String admNm; //행정동 이름
@@ -45,8 +45,8 @@ public class Region {
     private Double safetyScore;   // 최종 합산 안전 점수
 
     @Builder
-    public Region(String admCode, String admNm, MultiPolygon geometry){
-        this.admCode = admCode;
+    public Region(String sgisCode, String admNm, MultiPolygon geometry){
+        this.sgisCode = sgisCode;
         this.admNm = admNm;
         this.geometry = geometry;
     }

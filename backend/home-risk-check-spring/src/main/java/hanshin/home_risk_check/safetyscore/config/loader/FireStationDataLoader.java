@@ -52,16 +52,16 @@ public class FireStationDataLoader {
             boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
             if (!isChanged) {
-                log.info("소방서 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                log.info("[FireStation] 파일 변경 없음. 동기화를 건너뜁니다.");
                 return false;
             }
 
-            log.info("소방서 CSV 파일 변경 감지. 데이터 동기화를 시작합니다.");
+            log.info("[FireStation] 파일 변경 감지. 데이터 동기화를 시작합니다... (Kakao API 연동)");
 
-            String insertSql = "INSERT INTO fire_stations (name, address, adm_code, geometry) " +
+            String insertSql = "INSERT INTO fire_stations (name, address, sgis_code, geometry) " +
                     "VALUES (?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "address = VALUES(address), adm_code = VALUES(adm_code), geometry = VALUES(geometry)";
+                    "address = VALUES(address), sgis_code = VALUES(sgis_code), geometry = VALUES(geometry)";
 
             Map<String, String> addressFixMap = getAddressFixMap();
             List<Object[]> insertBatchArgs = new ArrayList<>();
@@ -100,7 +100,7 @@ public class FireStationDataLoader {
                         double lat = Double.parseDouble(kakaoDoc.getY());
 
                         Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
-                        String admCd = spatialRegionIndex.findAdmCode(point);
+                        String admCd = spatialRegionIndex.findSgisCode(point);
                         if (admCd == null) {
                             admCd = "";
                         }
@@ -131,13 +131,13 @@ public class FireStationDataLoader {
 
                 if (!failedAddresses.isEmpty()) {
                     log.warn("========================================");
-                    log.warn("카카오 API 좌표 변환 실패 목록 (총 {}건):", failedAddresses.size());
+                    log.warn("[FireStation] (Kakao API) 검색 실패 목록 (총 {}건):", failedAddresses.size());
                     failedAddresses.forEach(addr -> log.warn(" - {}", addr));
                     log.warn("========================================");
                 }
 
                 fileSyncService.updateSyncHistory(filename, fileHash);
-                log.info("소방서 데이터 자동 좌표 변환 및 동기화 완료. 총 {}건 추가되었습니다.", insertCount);
+                log.info("[FireStation] 데이터 동기화 완료. (총 {}건 추가/업데이트)", insertCount);
                 return true;
 
             }

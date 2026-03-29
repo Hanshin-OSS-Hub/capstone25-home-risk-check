@@ -24,8 +24,8 @@ public class PoliceStation {
 
     private String address; // 주소
 
-    @Column(name = "adm_code")
-    private String admCode;
+    @Column(name = "sgisCode")
+    private String sgisCode;
 
     @Column(nullable = false)
     private Point geometry;

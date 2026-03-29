@@ -14,22 +14,24 @@ public interface PoliceStationRepository extends JpaRepository<PoliceStation, Lo
     @Query("SELECT p.name FROM PoliceStation p")
     Set<String> findAllNames();
 
-    // 단건 조회용
-    @Query(value = """
-    SELECT COUNT(p.id)
-    FROM police_stations p
-    JOIN safety_regions r
-      ON MBRContains(r.geometry, p.geometry)
-     AND ST_Contains(r.geometry, p.geometry)
-    WHERE r.adm_code = :admCode
-    """, nativeQuery = true)
-    Integer countPoliceStationsInRegion(@Param("admCode") String admCode);
+    // 행정동 내 경찰서 개수 조회
+    @Query("SELECT COUNT(p) FROM PoliceStation p WHERE p.sgisCode = :sgisCode")
+    Integer countPoliceStationsInRegion(@Param("sgisCode") String sgisCode);
+
+    // 주소 기반 주변 경찰서 개수 조회
+    @Query(value = "SELECT COUNT(*) FROM police_stations " +
+            "WHERE ST_Distance_Sphere(geometry, " +
+            "ST_GeomFromText(CONCAT('POINT(', :lon, ' ', :lat, ')'), 4326, 'axis-order=long-lat')) <= :radius",
+            nativeQuery = true)
+    Integer countPoliceWithinRadius(@Param("lat") double lat,
+                                    @Param("lon") double lon,
+                                    @Param("radius") double radius);
 
     // 전체 조회용
-    @Query("SELECT p.admCode, COUNT(p) " +
+    @Query("SELECT p.sgisCode, COUNT(p) " +
        "FROM PoliceStation p " +
-       "WHERE p.admCode IS NOT NULL AND p.admCode != '' " +
-       "GROUP BY p.admCode")
-    List<Object[]> countAllGroupedByAdmCode();
+       "WHERE p.sgisCode IS NOT NULL AND p.sgisCode != '' " +
+       "GROUP BY p.sgisCode")
+    List<Object[]> countAllGroupedBySgisCode();
 
 }

@@ -44,11 +44,11 @@ public class CrimeStatsLoader {
             boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
             if (!isChanged) {
-                log.info("범죄 통계 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                log.info("[CrimeStats] 파일 변경 없음. 적재를 건너뜁니다.");
                 return false ; // 파일이 안 변했으면 바로 종료
             }
 
-            log.info("범죄 통계 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
+            log.info("[CrimeStats] 파일 변경 감지. 데이터 동기화를 시작합니다...");
 
             //DB에 저장된 모든 SggSafetyStats 가져오기
             List<SggSafetyStats> existingStats = sggSafetyStatsRepository.findAll();
@@ -134,7 +134,7 @@ public class CrimeStatsLoader {
             //  일괄 저장
             if (!statsToUpdate.isEmpty()) {
                 sggSafetyStatsRepository.saveAll(statsToUpdate);
-                log.info("범죄 데이터 동기화 완료. 총 {}건이 추가 되었습니다.", statsToUpdate.size());
+                log.info("[CrimeStats] 데이터 동기화 완료. (총 {}건 추가/업데이트)", statsToUpdate.size());
             } else {
                 log.info("업데이트할 범죄 데이터가 없습니다.");
             }

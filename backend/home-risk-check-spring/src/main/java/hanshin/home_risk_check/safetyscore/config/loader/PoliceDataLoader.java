@@ -44,10 +44,10 @@ public class PoliceDataLoader {
                 return false;
             }
 
-            String sql = "INSERT INTO police_stations (name, type, address,adm_code , geometry) " +
+            String sql = "INSERT INTO police_stations (name, type, address,sgis_code , geometry) " +
                     "VALUES (?, ?, ?, ? , ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "type = VALUES(type), address = VALUES(address), adm_code = VALUES(adm_code), geometry = VALUES(geometry)";
+                    "type = VALUES(type), address = VALUES(address), sgis_code = VALUES(sgis_code), geometry = VALUES(geometry)";
 
             int totalProcessedCount = 0;
 
@@ -58,10 +58,10 @@ public class PoliceDataLoader {
                 boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
                 if (!isChanged) {
-                    log.info("경찰서 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                    log.info("[Police] 파일 변경 없음. 동기화를 건너뜁니다.");
                     continue;// 파일이 안 변했으면 바로 종료
                 }
-                log.info("{} 파일 변경 감지, 데이터 동기화를 시작합니다.", filename);
+                log.info("[Police] 파일 변경 감지. 데이터 동기화를 시작합니다...");
 
                 String mode = (filename != null && filename.contains("substation")) ? "SUB" : "MAIN";
 
@@ -73,7 +73,7 @@ public class PoliceDataLoader {
             }
 
             if (totalProcessedCount > 0) {
-                log.info("경찰관서 데이터  동기화 완료. 총 {}건이 추가 되었습니다.", totalProcessedCount);
+                log.info("[Police] 데이터 동기화 완료. (총 {}건 추가/업데이트)", totalProcessedCount);
                 return true;
             }
 
@@ -145,7 +145,7 @@ public class PoliceDataLoader {
                     if (lat < 33 || lat > 39) continue;
 
                     Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
-                    String admCd = spatialRegionIndex.findAdmCode(point);
+                    String admCd = spatialRegionIndex.findSgisCode(point);
                     if (admCd == null) {
                         admCd = "";
                     }

@@ -54,15 +54,15 @@ public class AccidentPointLoader {
             boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
             if (!isChanged) {
-                log.info("교통사고 다발지역 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                log.info("[AccidentPoint] 파일 변경 없음. 동기화를 건너뜁니다.");
                 return false;
             }
 
-            log.info("교통사고 다발지역 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
+            log.info("[AccidentPoint] 파일 변경 감지. 데이터 동기화를 시작합니다... (Kakao API 연동)");
             Set<String> existingAddresses = trafficRepository.findAllRawAddresses();
 
             // API호출을 적게 하기위해 이미 주소를 알고 있는 경우 update만
-            String insertSql = "INSERT INTO traffic_accidents (raw_address, standard_address, adm_code, accident_count, death_count, geometry) " +
+            String insertSql = "INSERT INTO traffic_accidents (raw_address, standard_address, sgis_code, accident_count, death_count, geometry) " +
                     "VALUES (?, ?, ?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat'))";
             String updateSql = "UPDATE traffic_accidents SET accident_count = ?, death_count = ? WHERE raw_address = ?";
 
@@ -114,16 +114,16 @@ public class AccidentPointLoader {
                         String pointWkt = String.format("POINT(%s %s)", lon, lat);
 
                         Point accidentPoint = geometryFactory.createPoint(new Coordinate(lon, lat));
-                        String admCode = spatialRegionIndex.findAdmCode(accidentPoint);
+                        String sgisCode = spatialRegionIndex.findSgisCode(accidentPoint);
 
-                        if (admCode == null) {
-                            admCode = "";
+                        if (sgisCode == null) {
+                            sgisCode = "";
                         }
 
                         insertBatchArgs.add(new Object[]{
                                 rawAddress, //주소 원문
                                 kakaoDoc.getAddress_name(), // 카카오가 찾아준 정제된 주소
-                                admCode,
+                                sgisCode,
                                 accidentCount, // 사고 건수
                                 deathCount, // 사망자 수
                                 pointWkt // getCoordinate로 찾은 위경도
@@ -133,7 +133,7 @@ public class AccidentPointLoader {
                         if (insertBatchArgs.size() >= 100) {
                             jdbcTemplate.batchUpdate(insertSql, insertBatchArgs);
                             insertBatchArgs.clear();
-                            log.info("신규 교통사고 데이터 {}개 정제 및 저장 중...", insertCount);
+                            log.info("[AccidentPoint] (Kakao API) 신규 데이터 {}개 정제 및 저장 중...", insertCount);
                         }
                     } else {
                         failedAddresses.add(rawAddress);
@@ -149,14 +149,14 @@ public class AccidentPointLoader {
 
                 if (!failedAddresses.isEmpty()) {
                     log.warn("========================================");
-                    log.warn("카카오 API 검색 실패 목록 (총 {}건):", failedAddresses.size());
+                    log.warn("[AccidentPoint] (Kakao API) 검색 실패 목록 (총 {}건):", failedAddresses.size());
                     failedAddresses.forEach(addr -> log.warn(" - {}", addr));
                     log.warn("========================================");
                 }
 
                 fileSyncService.updateSyncHistory(filename, fileHash);
 
-                log.info("교통사고 다발지역 데이터 동기화 완료. 총 {} 건이 추가되었습니다. ", insertCount);
+                log.info("[AccidentPoint] 데이터 동기화 완료. (총 {}건 추가/업데이트)", insertCount);
 
                 return true;
             }

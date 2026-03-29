@@ -30,8 +30,8 @@ public  class Cctv {
 
     private Integer cameraCount;
 
-    @Column(name = "adm_code")
-    private String admCode;
+    @Column(name = "sgis_code")
+    private String sgisCode;
 
     @Column(nullable = false)
     private Point geometry;

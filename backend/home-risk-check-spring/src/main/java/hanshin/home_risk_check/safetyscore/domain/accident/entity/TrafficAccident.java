@@ -19,8 +19,8 @@ public class TrafficAccident {
 
     private String rawAddress; //CSV 원본 주소
     private String standardAddress; // API로 정제된 표준 주소
-    @Column(name = "adm_code")
-    private String admCode; // 행정동 코드
+    @Column(name = "sgis_code")
+    private String sgisCode; // 행정동 코드
 
     // 사고 건수
     private Integer accidentCount;  //사고 건수
@@ -31,11 +31,11 @@ public class TrafficAccident {
 
 
     @Builder
-    public TrafficAccident(String rawAddress, String standardAddress, String admCode,
+    public TrafficAccident(String rawAddress, String standardAddress, String sgisCode,
                            Integer accidentCount, Integer deathCount, Point geometry){
         this.rawAddress = rawAddress;
         this.standardAddress = standardAddress;
-        this.admCode = admCode;
+        this.sgisCode = sgisCode;
         this.accidentCount = accidentCount;
         this.deathCount = deathCount;
         this.geometry = geometry;

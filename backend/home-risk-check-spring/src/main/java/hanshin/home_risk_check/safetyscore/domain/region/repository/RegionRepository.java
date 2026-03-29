@@ -13,14 +13,26 @@ import java.util.Set;
 
 public interface RegionRepository extends JpaRepository<Region, Long> {
 
-    //admCode(String)으로 지역 정보 조회
-    Optional<Region> findByAdmCode(String admCode);
+    //sgisCode(String)으로 지역 정보 조회
+    Optional<Region> findBySgisCode(String sgisCode);
 
-
-    @Query("SELECT r.admCode FROM Region r")
-    Set<String> findAllAdmCodes();
+    @Query("SELECT r.sgisCode FROM Region r")
+    Set<String> findAllSgisCode();
 
     // DB에 점수 없는지 조회용 ( 기초 데이터 넣을때 사용)
     boolean existsBySafetyScoreIsNull();
+
+    //  특정 행정동(sgisCode)의 면적  계산
+    @Query(value = "SELECT ST_Area(ST_Transform(geometry, 3857)) " +
+            "FROM safety_regions " +
+            "WHERE sgis_code = :sgisCode",
+            nativeQuery = true)
+    Double getAreaBySgisCode(@Param("sgisCode") String sgisCode);
+
+    // 카카오에서 주는 행정동 코드와 sgis 코드가 다르므로 카카오에서 주는 좌표로 속한 행정동 찾아옴
+    @Query(value = "SELECT * FROM safety_regions " +
+            "WHERE ST_Contains(geometry, ST_GeomFromText(CONCAT('POINT(', :lon, ' ', :lat, ')'), 4326, 'axis-order=long-lat')) " +
+            "LIMIT 1", nativeQuery = true)
+    Optional<Region> findByLocation(@Param("lon") double lon, @Param("lat") double lat);
 
 }

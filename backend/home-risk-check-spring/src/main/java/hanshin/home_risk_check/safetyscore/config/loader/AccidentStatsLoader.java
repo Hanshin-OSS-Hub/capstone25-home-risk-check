@@ -53,11 +53,11 @@ public class AccidentStatsLoader {
             boolean isSgisChanged = fileSyncService.isChanged(sgisRes.getFilename(), sgisHash);
 
             if (!isSidoChanged && !isGugunChanged && !isSgisChanged) {
-                log.info("교통사고 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                log.info("[AccidentStats] 파일 변경 없음. 적재를 건너뜁니다.");
                 return false;
             }
 
-            log.info("교통사고 CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
+            log.info("[AccidentStats] 파일 변경 감지. 데이터 동기화를 시작합니다...");
 
             Map<String, String> sidoMap = loadSidoData(sidoRes);
             Map<String, String> sgisMap = loadSgisAdmCodeData(sgisRes);
@@ -68,9 +68,9 @@ public class AccidentStatsLoader {
             }
 
             // Upsert 쿼리 (없다면 생성, 있다면 덮어쓰기)
-            String insertSql = "INSERT INTO sgg_safety_stats (sido_nm, sgg_nm, sido_code, sgg_code, adm_code) " +
+            String insertSql = "INSERT INTO sgg_safety_stats (sido_nm, sgg_nm, sido_code, sgg_code, sgis_code) " +
                     "VALUES (?, ?, ?, ?, ?) " +
-                    "ON DUPLICATE KEY UPDATE sido_code = VALUES(sido_code), sgg_code = VALUES(sgg_code), adm_code = VALUES(adm_code)";
+                    "ON DUPLICATE KEY UPDATE sido_code = VALUES(sido_code), sgg_code = VALUES(sgg_code), sgis_code = VALUES(sgis_code)";
 
             List<Object[]> batchArgs = new ArrayList<>();
             int totalCount = 0;
@@ -114,7 +114,7 @@ public class AccidentStatsLoader {
                             continue;
                         }
 
-                        //SGIS AdmCode 매칭
+                        // sgisCode 매칭
                         String searchKey = currentSidoNm + " " + sggNm;
                         String sgisCode = sgisMap.get(searchKey);
 
@@ -160,7 +160,7 @@ public class AccidentStatsLoader {
             fileSyncService.updateSyncHistory(sgisRes.getFilename(), sgisHash);
 
             if (totalCount > 0) {
-                log.info("총 {}개의 신규 교통사고용 지역 코드가 저장되었습니다.", totalCount);
+                log.info("[AccidentStats] 데이터 동기화 완료. (총 {}건 추가/업데이트)", totalCount);
             }
             return true;
         } catch (Exception e) {

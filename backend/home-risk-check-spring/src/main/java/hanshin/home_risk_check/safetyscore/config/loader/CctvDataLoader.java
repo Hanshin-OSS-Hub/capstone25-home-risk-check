@@ -52,23 +52,23 @@ public class CctvDataLoader {
             boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
             if (!isChanged) {
-                log.info("CCTV CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                log.info("[CCTV] 파일 변경 없음. 동기화를 건너뜁니다.");
                 return false; // 파일이 안 변했으면 바로 종료
             }
 
-            log.info("CCTV CSV 파일 변경 감지, 데이터 동기화를 시작합니다.");
+            log.info("[CCTV] 파일 변경 감지. 데이터 동기화를 시작합니다...");
 
 
             // ST_GeomFromText: 텍스트 형식의 좌표를 DB가 인식하는 공간 객체로 변환하는 함수
             String insertSql = """
-                INSERT INTO cctvs (manage_no, address, purpose, camera_count, geometry, adm_code)
+                INSERT INTO cctvs (manage_no, address, purpose, camera_count, geometry, sgis_code)
                 VALUES (?, ?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat'), ?)
                 ON DUPLICATE KEY UPDATE
                     address = VALUES(address),
                     purpose = VALUES(purpose),
                     camera_count = VALUES(camera_count),
                     geometry = VALUES(geometry),
-                    adm_code = VALUES(adm_code)
+                    sgis_code = VALUES(sgis_code)
                 """;
 
             List<Object[]> batchArgs = new ArrayList<>();
@@ -112,13 +112,13 @@ public class CctvDataLoader {
                         // java에서 행정동 코드 찾기
                         // mysql은 SRID 4326에 대해 lat, lon으로 저장, WKTReader는 x,y 순서로 읽어서 lat, lon으로 형식 통일
                         Point cctvPoint = geometryFactory.createPoint(new Coordinate(lon, lat));
-                        String admCode = spatialRegionIndex.findAdmCode(cctvPoint);
+                        String sgisCode = spatialRegionIndex.findSgisCode(cctvPoint);
 
-                        if (admCode != null) {
+                        if (sgisCode != null) {
                             mappedCount++;
                         }
 
-                        batchArgs.add(new Object[]{ manageNo, address, data[5].trim(), cameraCount, pointWkt, admCode });
+                        batchArgs.add(new Object[]{ manageNo, address, data[5].trim(), cameraCount, pointWkt, sgisCode });
                         totalCount++;
 
                         //  1000개 단위로 save
@@ -127,7 +127,7 @@ public class CctvDataLoader {
                             batchArgs.clear();
 
                             if (totalCount % 30000 == 0) {
-                                log.info("{}개 CCTV 처리. {}개 매핑 완료...", totalCount, mappedCount);
+                                log.info(" [CCTV] {}개 처리 중... ({}개 SGIS 매핑 완료)", totalCount, mappedCount);
                             }
                         }
 
@@ -146,7 +146,7 @@ public class CctvDataLoader {
 
             fileSyncService.updateSyncHistory(filename, fileHash);
 
-            log.info("CCTV 데이터 동기화 완료. 총 {} 건이 추가 되었습니다.", totalCount);
+            log.info("[CCTV] 데이터 동기화 완료. (총 {}건 추가/업데이트)", totalCount);
             return true;
 
         } catch (Exception e) {

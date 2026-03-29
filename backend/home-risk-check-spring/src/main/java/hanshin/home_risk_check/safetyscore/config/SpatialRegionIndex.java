@@ -22,7 +22,7 @@ public class SpatialRegionIndex {
     private boolean isInitialized = false;
 
     // 트리 내부에 담아둘 임시 DTO
-    private record RegionData(String admCode, Geometry polygon) {}
+    private record RegionData(String sgisCode, Geometry polygon) {}
 
     @PostConstruct
     public void init() {
@@ -42,7 +42,7 @@ public class SpatialRegionIndex {
             if (region.getGeometry() != null) {
                 // Envelope(MBR)를 키로 사용하여 저장
                 index.insert(region.getGeometry().getEnvelopeInternal(),
-                        new RegionData(region.getAdmCode(), region.getGeometry()));
+                        new RegionData(region.getSgisCode(), region.getGeometry()));
             }
         }
         index.build();
@@ -53,7 +53,7 @@ public class SpatialRegionIndex {
     /**
      * 좌표를 입력받아 해당하는 행정동 코드를 반환
      */
-    public String findAdmCode(Point point) {
+    public String findSgisCode(Point point) {
         if (point == null || !isInitialized) return null;
 
         // 점 근처에 있는 다각형 후보군을 가져옴(MBR(최소 외곽 사각형) 필터링)
@@ -63,7 +63,7 @@ public class SpatialRegionIndex {
         for (Object obj : candidates) {
             RegionData data = (RegionData) obj;
             if (data.polygon().covers(point)) {
-                return data.admCode();
+                return data.sgisCode();
             }
         }
 
@@ -80,7 +80,7 @@ public class SpatialRegionIndex {
             double dist = data.polygon().distance(point);
             if (dist < minDistance && dist <= threshold) {
                 minDistance = dist;
-                closestCode = data.admCode();
+                closestCode = data.sgisCode();
             }
         }
         // 가장가까운 동네 코드 반환, 없으면 null

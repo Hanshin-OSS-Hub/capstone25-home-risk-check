@@ -54,14 +54,14 @@ public class RegionSafetyScoreService {
         Map<String, Integer> sggPopulationMap = regions.stream()
                 .filter(r -> r.getSgisCode() != null && r.getSgisCode().length() >= 5)
                 .collect(Collectors.groupingBy(
-                        r -> r.getSgisCode().substring(0, 5),
+                        r -> extractSggCode(r.getSgisCode()),
                         Collectors.summingInt(r -> r.getPopulation() != null && r.getPopulation() > 0 ? r.getPopulation() : 0)));
         log.info("sggPopulationMap 조회 완료");
 
         Map<String, Double> sggAreaMap = regions.stream()
                 .filter(r -> r.getSgisCode() != null && r.getSgisCode().length() >= 5)
                 .collect(Collectors.groupingBy(
-                        r -> r.getSgisCode().substring(0, 5),
+                        r -> extractSggCode(r.getSgisCode()),
                         Collectors.summingDouble(r -> r.getGeometry() != null ? r.getGeometry().getArea() : 0.0)));
         log.info("sggAreaMap 캐싱 완료");
 
@@ -85,13 +85,8 @@ public class RegionSafetyScoreService {
         List<Double> infraRawScores = new java.util.ArrayList<>();
         List<Double> accidentRawScores = new java.util.ArrayList<>();
 
-        for (int i = 0; i < regions.size(); i++) {
-            Region region = regions.get(i);
-
-            // 100개마다 로그를 찍어서 서버가 살아있음을 확인
-            if (i % 100 == 0) {
-                log.info("진행 중: {} / {} (현재: {})", i, regions.size(), region.getAdmNm());
-            }
+        log.info("전국 안전점수 계산 시작");
+        for (Region region : regions) {
 
             crimeRawScores.add(calculateCrimeRaw(region,sggStatsMap,sggPopulationMap, sggAreaMap));
             infraRawScores.add(calculateInfraRaw(region,cctvMap, policeMap, fireMap));
@@ -185,7 +180,7 @@ public class RegionSafetyScoreService {
         }
 
         // Region의 sgisCode의 앞 5자리를 추출하여 시군구 코드로 사용
-        String sggCode = sgisCode.substring(0, 5);
+        String sggCode = extractSggCode(sgisCode);
         SggSafetyStats sggStats = sggStatsMap.get(sggCode);
 
         if (sggStats == null) {
@@ -246,7 +241,7 @@ public class RegionSafetyScoreService {
             return 0.0;
         }
 
-        String sggCode = sgisCode.substring(0, 5);
+        String sggCode = extractSggCode(sgisCode);
         SggSafetyStats sggStats = sggStatsMap.get(sggCode);
 
         if (sggStats == null || sggStats.getAccCnt() == null) {
@@ -270,6 +265,23 @@ public class RegionSafetyScoreService {
 
         // 3. 인구 대비 사고율(60%) + 면적 대비 사고밀도(40%) 계산
         return (accidentPerCapita * 0.6) + (accidentDensity * 0.4);
+    }
+
+
+    // SGIS 코드에서 시군구 5자리 코드 추출 (예외처리 포함)
+    private String extractSggCode(String sgisCode) {
+        if (sgisCode == null || sgisCode.length() < 5) {
+            return null;
+        }
+
+        String sggCode = sgisCode.substring(0, 5);
+
+        //부천시 예외 처리: 31051(원미), 31052(소사), 31053(오정) 등은 모두 31050으로 통일
+        if (sggCode.startsWith("3105")) {
+            return "31050";
+        }
+
+        return sggCode;
     }
 
     // 윈저라이징(이상치 제어)

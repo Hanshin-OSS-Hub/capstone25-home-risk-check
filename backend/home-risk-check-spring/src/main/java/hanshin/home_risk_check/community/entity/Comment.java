@@ -7,78 +7,131 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
  * 댓글 Entity
  * DB의 comment 테이블과 매핑되는 클래스
+ *
+ * ERD 상으로는
+ * - post_id
+ * - parent_comment_id
+ * - root_comment_id
+ * 가 숫자(FK) 컬럼으로 존재하지만,
+ * JPA에서는 이를 객체 연관관계로 매핑해서 더 편하게 사용한다.
+ *
+ * 단, 프론트로 응답할 때는 DTO에서 다시 ID만 꺼내서 내려준다.
  */
-@Entity  // JPA가 이 클래스를 DB 테이블과 연결된 엔티티로 인식
-@Table(name = "comment") // 실제 DB 테이블 이름
+@Entity
+@Table(name = "comment")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-// JPA는 기본 생성자가 필요함
-// 외부에서 무분별하게 생성하지 못하도록 protected로 제한
-
 public class Comment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    // DB에서 AUTO_INCREMENT 방식으로 PK 생성
     @Column(name = "comment_id")
     private Long commentId;
 
-    @Column(name = "post_id", nullable = false)
-    // 어떤 게시글에 달린 댓글인지
-    private Long postId;
-
-    @Column(name = "author_id", nullable = false)
-    // 댓글 작성자 ID
-    private Long authorId;
-
-    @Lob
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
-    // 댓글 내용 (길이 제한을 크게 두기 위해 TEXT 사용)
-    private String content;
-
-    @Column(name = "parent_comment_id")
-    // 부모 댓글 ID
-    // 일반 댓글이면 null
-    // 대댓글이면 부모 댓글 ID 저장
-    private Long parentCommentId;
-
-    @Column(name = "root_comment_id")
-    // 댓글 트리의 최상위 댓글 ID
-    // depth 1 구조에서 댓글 묶음을 정렬할 때 사용
-    private Long rootCommentId;
-
-    @Column(name = "depth", nullable = false)
-    // 댓글 깊이
-    // 0 = 일반 댓글
-    // 1 = 대댓글
-    private Integer depth;
-
-    @Column(name = "created_at", nullable = false)
-    // 댓글 생성 시간
-    private LocalDateTime createdAt;
+    /*
+     * 댓글이 속한 게시글
+     *
+     * comment.post_id -> post.post_id
+     *
+     * LAZY:
+     * 댓글만 조회할 때 게시글 전체를 즉시 다 끌고오지 않도록 설정
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
 
     /*
-     * Builder 패턴
-     * 댓글 생성 시 사용하는 생성자
+     * 댓글 작성자 ID
+     *
+     * 아직 User 엔티티와 연관관계를 맺지 않았으므로
+     * 작성자 정보는 Long 값으로만 관리한다.
      */
+    @Column(name = "author_id", nullable = false)
+    private Long authorId;
+
+    /*
+     * 댓글 내용
+     */
+    @Lob
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    /*
+     * 부모 댓글
+     *
+     * - 일반 댓글이면 null
+     * - 대댓글이면 자신이 달린 부모 댓글을 참조
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id")
+    private Comment parentComment;
+
+    /*
+     * 루트 댓글
+     *
+     * 댓글 트리의 최상위 댓글을 가리킨다.
+     *
+     * 예:
+     * 루트 댓글 A
+     *   ├ 대댓글 B
+     *   └ 대댓글 C
+     *
+     * B, C의 rootComment는 모두 A가 된다.
+     *
+     * 댓글 목록을 묶어서 정렬할 때 사용한다.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "root_comment_id")
+    private Comment rootComment;
+
+    /*
+     * 현재 댓글의 자식 댓글 목록
+     *
+     * parentComment를 기준으로 역방향 매핑
+     * 현재 정책상 depth 1까지만 허용하므로
+     * 실질적으로는 "루트 댓글 -> 대댓글들" 구조로 사용된다.
+     */
+    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> children = new ArrayList<>();
+
+    /*
+     * 댓글 깊이
+     *
+     * 0 = 일반 댓글
+     * 1 = 대댓글
+     */
+    @Column(name = "depth", nullable = false)
+    private Integer depth;
+
+    /*
+     * 댓글 생성 시간
+     */
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
     @Builder
-    public Comment(Long postId, Long authorId, String content,
-                   Long parentCommentId, Long rootCommentId, Integer depth) {
-        this.postId = postId;
+    public Comment(Post post,
+                   Long authorId,
+                   String content,
+                   Comment parentComment,
+                   Comment rootComment,
+                   Integer depth) {
+        this.post = post;
         this.authorId = authorId;
         this.content = content;
-        this.parentCommentId = parentCommentId;
-        this.rootCommentId = rootCommentId;
+        this.parentComment = parentComment;
+        this.rootComment = rootComment;
         this.depth = depth;
     }
 
     /*
-     * DB INSERT 전에 자동 실행
-     * 댓글 생성 시간 기록
+     * DB INSERT 직전에 자동 실행
      */
     @PrePersist
     public void prePersist() {
@@ -86,10 +139,11 @@ public class Comment {
     }
 
     /*
-     * root 댓글 ID 설정
-     * 댓글 저장 후 rootCommentId를 자기 자신 ID로 설정할 때 사용
+     * 루트 댓글 설정 메서드
+     *
+     * 루트 댓글은 저장 직후 자기 자신을 rootComment로 넣어준다.
      */
-    public void setRootCommentId(Long rootCommentId) {
-        this.rootCommentId = rootCommentId;
+    public void setRootComment(Comment rootComment) {
+        this.rootComment = rootComment;
     }
 }

@@ -6,6 +6,7 @@ import joblib
 from datetime import datetime
 from sqlalchemy import text
 from app.services.feature_service import calculate_risk_features, convert_to_model_input
+from app.services.risk_calculator import _rule_based_score, _score_to_level, RULE_WEIGHT, ML_WEIGHT
 
 from app.core.constants import BuildingCol, Table
 # ---------------------------------------------------------
@@ -180,10 +181,7 @@ def run_risk_analysis_pipeline():
         lambda x: x['rent_price'] / x['hug_safe_limit'] if x['hug_safe_limit'] > 0 else 0, axis=1
     )
 
-    # (4) [수정됨] 정성적 리스크 점수화 (Simulation Score)
-    # 가짜 대출금을 만드는 대신, 위험 '점수'를 계산합니다.
-
-    # 4-1. 가중치 로직
+    # (4) 정성적 리스크 점수화 (Simulation Score) — 참고용 유지
     def type_weight(use):
         s = str(use)
         if '근린' in s: return 0.4
@@ -199,76 +197,59 @@ def run_risk_analysis_pipeline():
         addr = str(row.get('detail_address', '')) + str(row.get('lot_address', ''))
         return 0.2 if any(r in addr for r in high_risk_regions) else 0.0
 
-    def short_term_weight(row):
+    def calc_short_term_weight(row):
         try:
             if pd.isna(row['contract_date']) or pd.isna(row['ownership_changed_date']): return 0.0
             days = (row['contract_date'] - row['ownership_changed_date']).days
             if -90 < days < 90: return 0.3
             if 0 <= days < 730: return 0.1
             return 0.0
-        except:
+        except Exception:
             return 0.0
 
-    # 4-2. 점수 합산 (0.0 ~ 1.0 범위)
     w_type = df_target['main_use'].apply(type_weight)
     w_trust = df_target['owner_name'].apply(trust_weight)
     w_region = df_target.apply(region_weight, axis=1)
-    w_short = df_target.apply(short_term_weight, axis=1)
+    w_short = df_target.apply(calc_short_term_weight, axis=1)
 
-    # 이 점수는 'CAUTION' 등급을 매길 때 보조 지표로 사용
     df_target['risk_simulation_score'] = (w_type + w_trust + w_region + w_short).clip(0, 1.0)
 
-    # (5) [수정됨] 깡통전세 위험도 (Financial Risk)
-    # 실제 대출 정보(등기부 채권)가 없으므로 지금은 0으로 가정.
-    # 추후 등기부 크롤링 데이터가 있으면 여기서 더해줍니다.
+    # (5) 깡통전세 위험도
     real_debt_amount = 0
-
-    # 공식: (전세금 + 실제대출) / 시세
     df_target['total_risk_ratio'] = (df_target['rent_price'] + real_debt_amount) / df_target['est_market_price']
 
-
-
-    # 점수는 표시용으로 변환 (재무 위험 + 정성 위험 반영)
-    df_target['risk_score'] = (
-                (df_target['total_risk_ratio'] * 0.7 + df_target['risk_simulation_score'] * 0.3) * 100).astype(
-        int).clip(0, 100)
-
-    # (6) [수정됨] 등급 판정 로직
-
-    def determine_risk_level(row):
-        # 1. 재무적 위험 (Financial) - 즉시 위험
-        if row['hug_risk_ratio'] > 1.0: return 'RISKY'  # 보증보험 불가
-        if row['total_risk_ratio'] >= 0.8: return 'RISKY'  # 깡통전세 (80% 이상)
-
-        if row['risk_score'] >= 80:
-            return 'RISKY'
-
-        if row['risk_score'] >= 60:
-            return 'CAUTION'
-
-        if row['risk_simulation_score'] >= 0.5: return 'CAUTION'
-
-        return 'SAFE'
-
-    df_target['risk_level'] = df_target.apply(determine_risk_level, axis=1)
-
-    # DB 저장을 위해 loan_amount 컬럼은 0 또는 시뮬레이션 값으로 채워둠 (호환성 유지)
-    # 단, total_risk_ratio 계산에는 이미 빠져있음.
+    # DB 저장을 위해 loan_amount 컬럼은 0으로 채워둠
     df_target['est_loan_amount'] = 0
 
-    # --- AI 모델 적용 (Optional) ---
+    # =================================================================
+    # [변경] 하이브리드 등급 판정 (룰 베이스 60% + ML 40%)
+    # =================================================================
+
+    # --- Step 1: 룰 베이스 점수 계산 (각 행에 대해) ---
+    def get_rule_score(row):
+        """risk_calculator._rule_based_score()와 동일한 로직을 행 단위로 적용"""
+        feats = {
+            'jeonse_ratio': row['jeonse_ratio'],
+            'total_risk_ratio': row['total_risk_ratio'],
+            'hug_risk_ratio': row['hug_risk_ratio'],
+            'is_illegal': 1 if str(row[BuildingCol.IS_VIOLATING]).strip() == 'Y' else 0,
+            'is_trust_owner': 1 if row['owner_name'] and '신탁' in str(row['owner_name']) else 0,
+            'short_term_weight': w_short[row.name] if row.name in w_short.index else 0,
+        }
+        return _rule_based_score(feats)
+
+    df_target['rule_score'] = df_target.apply(get_rule_score, axis=1)
+
+    # --- Step 2: ML 모델 예측 (Optional) ---
     model_path = os.path.join(project_root, 'models', 'fraud_rf_model.pkl')
+    ml_available = False
 
     if os.path.exists(model_path):
         print("--- [AI] 학습된 모델로 예측 수행 ---")
         try:
             rf_model = joblib.load(model_path)
 
-            # DataFrame의 각 행을 순회하며 입력 데이터 생성
-            # (속도를 위해 벡터화 연산을 권장하지만, 로직 일관성을 위해 apply 사용)
-
             def get_ai_prob(row):
-                # 1. 필요한 변수 준비 (data_processor와 동일 로직)
                 short_term_w = 0.0
                 if pd.notna(row['ownership_changed_date']) and pd.notna(row['contract_date']):
                     days = (row['contract_date'] - row['ownership_changed_date']).days
@@ -280,11 +261,10 @@ def run_risk_analysis_pipeline():
                 is_trust = 1 if row['owner_name'] and '신탁' in str(row['owner_name']) else 0
                 is_viol = 1 if str(row[BuildingCol.IS_VIOLATING]).strip() == 'Y' else 0
 
-                # 2. 피처 계산
                 feats = calculate_risk_features(
                     deposit_amount=row['rent_price'],
                     market_price=row['est_market_price'],
-                    real_debt=0,  # 배치 분석 시엔 등기부 빚 정보 없으므로 0
+                    real_debt=0,
                     main_use=row['main_use'],
                     usage_approval_date=row['use_apr_day'],
                     is_illegal=is_viol,
@@ -292,19 +272,35 @@ def run_risk_analysis_pipeline():
                     short_term_weight=short_term_w
                 )
 
-                # 3. 모델 입력 포맷 변환 (DataFrame 1행)
                 df_input = convert_to_model_input(feats)
-
-                # 4. 예측
                 return rf_model.predict_proba(df_input)[0][1]
 
-            # 전체 데이터에 적용
             df_target['ai_risk_prob'] = df_target.apply(get_ai_prob, axis=1)
+            ml_available = True
             print(f"-> AI 예측 완료 (평균 위험도: {df_target['ai_risk_prob'].mean():.4f})")
 
         except Exception as e:
             print(f"!!! [Critical] AI 모델 예측 실패: {e}")
             df_target['ai_risk_prob'] = 0.0
+    else:
+        df_target['ai_risk_prob'] = 0.0
+
+    # --- Step 3: 하이브리드 결합 ---
+    if ml_available:
+        df_target['hybrid_score'] = (
+            df_target['rule_score'] * RULE_WEIGHT +
+            df_target['ai_risk_prob'] * ML_WEIGHT
+        )
+        print(f"-> 하이브리드 판정 적용 (룰 {RULE_WEIGHT*100:.0f}% + ML {ML_WEIGHT*100:.0f}%)")
+    else:
+        df_target['hybrid_score'] = df_target['rule_score']
+        print("-> ML 모델 미사용 — 룰 베이스 100%로 판정")
+
+    # --- Step 4: 등급 판정 ---
+    df_target['risk_level'] = df_target['hybrid_score'].apply(_score_to_level)
+
+    # risk_score는 0~100 스케일로 변환 (DB 저장 및 표시용)
+    df_target['risk_score'] = (df_target['hybrid_score'] * 100).astype(int).clip(0, 100)
 
     # --- DB 저장 ---
     df_save = df_target[[
@@ -325,7 +321,6 @@ def run_risk_analysis_pipeline():
     print(f"--- 최종 저장: {len(df_save)}건 ---")
     try:
         with engine.connect() as conn:
-            # 변경 - 저장할 address_key만 골라서 삭제
             keys = df_save['address_key'].tolist()
             conn.execute(text(
                 "DELETE FROM risk_analysis_result WHERE address_key IN :keys"

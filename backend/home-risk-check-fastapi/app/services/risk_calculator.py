@@ -4,7 +4,7 @@
 담당 기능:
 - OCR/DB 원천 데이터 → feature_service 피처 변환 (어댑터)
 - AI 모델 예측
-- 위험 등급 판정
+- 하이브리드 위험 등급 판정 (룰 베이스 60% + ML 40%)
 - 위험 요인 분석
 
 [변경 이력]
@@ -12,6 +12,8 @@
 - build_features_from_sources(): OCR/DB dict → feature_service 시그니처 변환 어댑터 추가
 - predict_with_model(): feature_service.convert_to_model_input() 사용으로 통일
 - bare except → except Exception 수정
+- [NEW] 하이브리드 등급 판정: determine_risk_level() → 룰 베이스 + ML 가중 결합
+- [NEW] _rule_based_score(): 룰 베이스 점수를 0~1 연속값으로 반환
 """
 import os
 import logging
@@ -33,6 +35,12 @@ logger = logging.getLogger(__name__)
 
 # 프로젝트 루트
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# =============================================================================
+# 하이브리드 가중치 설정
+# =============================================================================
+RULE_WEIGHT = 0.6   # 룰 베이스 비중
+ML_WEIGHT = 0.4     # ML 모델 비중
 
 
 # =============================================================================
@@ -160,6 +168,57 @@ def build_features_from_sources(
 
 
 # =============================================================================
+# 룰 베이스 위험도 점수 (0.0 ~ 1.0 연속값)
+# =============================================================================
+def _rule_based_score(features: Dict[str, Any]) -> float:
+    """
+    룰 베이스 위험도 점수를 0.0 ~ 1.0 연속값으로 반환.
+
+    하이브리드 판정에서 ML 점수와 결합하기 위해 사용.
+    기존 _rule_based_prediction()의 로직을 그대로 유지하되,
+    명확히 "룰 베이스 점수"임을 구분.
+    """
+    score = 0.0
+
+    # 전세가율
+    jeonse_ratio = features.get('jeonse_ratio', 0)
+    if jeonse_ratio >= 0.9:
+        score = max(score, 0.95)
+    elif jeonse_ratio >= 0.8:
+        score = max(score, 0.8)
+    elif jeonse_ratio >= 0.7:
+        score = max(score, 0.5)
+    elif jeonse_ratio >= 0.6:
+        score = max(score, 0.3)
+
+    # 총 위험 비율 (선순위 채권 포함)
+    total_risk = features.get('total_risk_ratio', 0) or features.get('_ref_total_risk_ratio', 0)
+    if total_risk >= 0.9:
+        score = max(score, 0.9)
+    elif total_risk >= 0.8:
+        score = max(score, 0.7)
+
+    # HUG 보증보험 불가
+    hug_risk = features.get('hug_risk_ratio', 0) or features.get('_ref_hug_risk_ratio', 0)
+    if hug_risk > 1.0:
+        score = max(score, 0.85)
+
+    # 위반 건축물
+    if features.get('is_illegal', 0):
+        score = max(score, 0.6)
+
+    # 신탁 + 단기 소유 (복합 위험)
+    if features.get('is_trust_owner', 0) and features.get('short_term_weight', 0) > 0:
+        score = max(score, 0.6)
+    elif features.get('is_trust_owner', 0):
+        score = max(score, 0.4)
+    elif features.get('short_term_weight', 0) >= 0.3:
+        score = max(score, 0.45)
+
+    return float(np.clip(score, 0.0, 1.0))
+
+
+# =============================================================================
 # AI 모델 예측
 # =============================================================================
 def predict_with_model(features: Dict[str, Any]) -> float:
@@ -167,7 +226,7 @@ def predict_with_model(features: Dict[str, Any]) -> float:
     AI 모델로 위험 확률 예측
 
     Args:
-        features: 피처 딕셔너리 (build_features_from_sources 또는 calculate_risk_features 반환값)
+        features: 피처 딕셔너리
 
     Returns:
         위험 확률 (0.0 ~ 1.0)
@@ -175,71 +234,101 @@ def predict_with_model(features: Dict[str, Any]) -> float:
     model = get_model()
 
     if model is None:
-        # 모델 없으면 룰 베이스로 대체
-        return _rule_based_prediction(features)
+        # 모델 없으면 None 반환 (하이브리드에서 룰 베이스 100%로 처리)
+        return None
 
     try:
-        # feature_service의 convert_to_model_input 사용 (피처 순서 보장)
         df_input = convert_to_model_input(features)
-
-        # 예측
         prob = model.predict_proba(df_input)[0][1]
         return float(prob)
 
     except Exception as e:
         logger.error(f"모델 예측 오류: {e}")
-        return _rule_based_prediction(features)
+        return None
 
 
-def _rule_based_prediction(features: Dict[str, Any]) -> float:
+# =============================================================================
+# 하이브리드 위험도 판정 (핵심 변경)
+# =============================================================================
+def calculate_hybrid_score(features: Dict[str, Any]) -> Dict[str, Any]:
     """
-    룰 베이스 위험도 예측 (모델 없을 때 Fallback)
+    룰 베이스 점수와 ML 모델 점수를 가중 결합하여
+    최종 위험 점수와 등급을 산출.
 
-    [개선] is_illegal, total_risk_ratio 반영
-    """
-    prob = 0.0
-
-    # 전세가율 80% 초과
-    jeonse_ratio = features.get('jeonse_ratio', 0)
-    if jeonse_ratio >= 0.8:
-        prob = max(prob, 0.8)
-    elif jeonse_ratio >= 0.7:
-        prob = max(prob, 0.5)
-
-    # 총 위험 비율 (선순위 채권 포함)
-    total_risk = features.get('total_risk_ratio', 0) or features.get('_ref_total_risk_ratio', 0)
-    if total_risk >= 0.9:
-        prob = max(prob, 0.9)
-    elif total_risk >= 0.8:
-        prob = max(prob, 0.7)
-
-    # 위반 건축물
-    if features.get('is_illegal', 0):
-        prob = max(prob, 0.6)
-
-    # 신탁 + 단기 소유
-    if features.get('is_trust_owner', 0) and features.get('short_term_weight', 0) > 0:
-        prob = max(prob, 0.6)
-
-    return prob
-
-
-def determine_risk_level(prob: float) -> str:
-    """
-    확률을 위험 등급으로 변환
+    가중치: 룰 베이스 60% + ML 40% (ML 모델이 없으면 룰 베이스 100%)
 
     Args:
-        prob: 위험 확률 (0.0 ~ 1.0)
+        features: 피처 딕셔너리
+
+    Returns:
+        {
+            "final_score": float (0~100),
+            "risk_level": str ("SAFE" | "CAUTION" | "RISKY"),
+            "rule_score": float (0~1),
+            "ml_score": float | None (0~1),
+            "weights": {"rule": float, "ml": float}
+        }
+    """
+    # 1. 룰 베이스 점수 계산
+    rule_score = _rule_based_score(features)
+
+    # 2. ML 모델 점수 계산
+    ml_score = predict_with_model(features)
+
+    # 3. 가중 결합
+    if ml_score is not None:
+        combined = rule_score * RULE_WEIGHT + ml_score * ML_WEIGHT
+        used_weights = {"rule": RULE_WEIGHT, "ml": ML_WEIGHT}
+    else:
+        # ML 모델이 없으면 룰 베이스 100%
+        combined = rule_score
+        used_weights = {"rule": 1.0, "ml": 0.0}
+        logger.info("ML 모델 미사용 — 룰 베이스 100%로 판정")
+
+    # 4. 0~100 점수 변환
+    final_score = round(combined * 100, 2)
+
+    # 5. 등급 판정
+    risk_level = _score_to_level(combined)
+
+    return {
+        "final_score": final_score,
+        "risk_level": risk_level,
+        "rule_score": round(rule_score, 4),
+        "ml_score": round(ml_score, 4) if ml_score is not None else None,
+        "weights": used_weights,
+    }
+
+
+def _score_to_level(score: float) -> str:
+    """
+    결합 점수 → 위험 등급 변환
+
+    Args:
+        score: 결합 점수 (0.0 ~ 1.0)
 
     Returns:
         "SAFE" | "CAUTION" | "RISKY"
     """
-    if prob < 0.4:
-        return "SAFE"
-    elif prob < 0.7:
+    if score >= 0.7:
+        return "RISKY"
+    elif score >= 0.4:
         return "CAUTION"
     else:
-        return "RISKY"
+        return "SAFE"
+
+
+# =============================================================================
+# 하위 호환용: determine_risk_level (기존 인터페이스 유지)
+# =============================================================================
+def determine_risk_level(prob: float) -> str:
+    """
+    [하위 호환] 단일 확률값 → 등급 변환.
+
+    주의: 새 코드에서는 calculate_hybrid_score()를 사용하세요.
+    이 함수는 기존 코드와의 호환성을 위해 유지됩니다.
+    """
+    return _score_to_level(prob)
 
 
 # =============================================================================

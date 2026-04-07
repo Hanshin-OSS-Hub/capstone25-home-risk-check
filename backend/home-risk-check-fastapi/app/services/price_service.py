@@ -6,6 +6,13 @@
 - 공시지가 조회
 - API 수집 이력 관리
 - 시세 추정 로직
+
+[변경 이력]
+- [NEW] 공시가 → 시세 추정 시 국토부 현실화율 기반 유형별 배수 적용
+  - 기존: 일괄 × 1.26 (HUG 기준)
+  - 변경: 공동주택 × 1.449, 단독주택 × 1.866, 오피스텔 × 1.587
+  - 근거: 국토교통부 "부동산 공시가격 현실화 계획" (2020.11.03)
+         2023~2026년 4년 연속 동결 (2025.11.13 중앙부동산가격공시위원회 확인)
 """
 import logging
 from datetime import datetime, timedelta
@@ -22,6 +29,51 @@ logger = logging.getLogger(__name__)
 
 # 재시도 설정
 MAX_DB_RETRIES=2
+
+
+# =============================================================================
+# 공시가격 → 시세 추정 배수 (국토부 현실화율 기반)
+# =============================================================================
+# 근거: 국토교통부·행정안전부, "부동산 공시가격 현실화 계획" (2020.11.03)
+#       대한민국 정책브리핑 https://www.korea.kr/news/policyNewsView.do?newsId=148879449
+#       국토교통부 보도자료 https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?lcmspage=94&id=95089062
+#       - 공동주택 현실화율 69.0% → 배수 1/0.69 = 1.449
+#       - 단독주택 현실화율 53.6% → 배수 1/0.536 = 1.866
+#       - 토지     현실화율 65.5% → 배수 1/0.655 = 1.527
+#       2023년 이후 4년 연속 동결 (2025.11.13 중앙부동산가격공시위원회 심의·의결)
+#
+# 오피스텔은 공동주택에 포함되지 않으며 국세청 기준시가로 별도 관리됨.
+# 공동주택(69%)과 단독주택(53.6%) 중간값인 약 63%를 추정 적용.
+# =============================================================================
+REALIZATION_MULTIPLIER = {
+    "아파트":     1.449,   # 공동주택 69.0%
+    "연립":       1.449,   # 공동주택 69.0%
+    "다세대":     1.449,   # 공동주택 69.0%
+    "단독":       1.866,   # 단독주택 53.6%
+    "다가구":     1.866,   # 단독주택 53.6%
+    "오피스텔":   1.449,   # 공동주택 69.0%
+}
+DEFAULT_MULTIPLIER = 1.449  # 공동주택 기준 (가장 보수적)
+
+
+def _get_realization_multiplier(building_type: str) -> Tuple[float, str]:
+    """
+    건물 유형별 공시가→시세 변환 배수 반환 (국토부 현실화율 기반)
+
+    Args:
+        building_type: 주용도 (예: "다세대주택", "아파트", "오피스텔")
+
+    Returns:
+        Tuple[배수, 매칭된 유형명]
+    """
+    if not building_type:
+        return DEFAULT_MULTIPLIER, "기본값(공동주택)"
+
+    for keyword, multiplier in REALIZATION_MULTIPLIER.items():
+        if keyword in building_type:
+            return multiplier, keyword
+
+    return DEFAULT_MULTIPLIER, "기본값(공동주택)"
 
 
 def _execute_query_safe(query, params: dict = None, operation_name: str = "DB 작업"):
@@ -425,15 +477,20 @@ def get_public_price(
 def estimate_market_price(
         pnu: str,
         area_size: Optional[float] = None,
-        fetch_if_missing: bool = True
+        fetch_if_missing: bool = True,
+        building_type: str = ""
 ) -> Tuple[float, str]:
     """
     시세 추정 (실거래가 -> 공시지가 순으로 시도)
+
+    실거래가가 있으면 그대로 사용하고, 없을 경우 공시지가에
+    국토부 현실화율 기반 유형별 배수를 적용하여 시세를 추정합니다.
 
     Args:
         pnu: PNU 문자열
         area_size: 전용면적
         fetch_if_missing: 데이터 없을 시 API 수집 여부
+        building_type: 건물 주용도 (공시가 fallback 시 배수 결정용)
 
     Returns:
         Tuple[시세(만원), 출처]
@@ -464,13 +521,16 @@ def estimate_market_price(
         except Exception as e:
             logger.warning(f"API 수집 실패: {e}")
 
-    # 3. 공시지가 기반 추정
+    # 3. 공시지가 기반 추정 (국토부 현실화율 배수 적용)
     public_price = get_public_price(pnu, area_size)
 
     if public_price > 0:
-        # 공시가의 126%를 시세로 추정 (HUG 기준)
-        estimated = (public_price / 10000) * 1.26
-        logger.info(f"공시지가 기반 시세 추정: {estimated:,.0f}만원")
+        multiplier, matched_type = _get_realization_multiplier(building_type)
+        estimated = (public_price / 10000) * multiplier
+        logger.info(
+            f"공시지가 기반 시세 추정: {estimated:,.0f}만원 "
+            f"(배수: {multiplier}, 유형: {matched_type}, 원본 주용도: {building_type})"
+        )
         return estimated, "Public_Price_Estimate"
 
     return 0, "Unknown"

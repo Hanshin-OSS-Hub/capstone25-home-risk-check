@@ -17,6 +17,8 @@
 - [NEW] 하이브리드 판정: calculate_hybrid_score() 사용으로 전환
   - 기존: predict_with_model() → determine_risk_level(prob)
   - 변경: calculate_hybrid_score(features) → 룰 60% + ML 40% 결합 점수
+- [NEW] estimate_market_price 호출 시 building_type 전달
+  - 공시가 fallback 시 국토부 현실화율 기반 유형별 배수 적용
 """
 import logging
 from datetime import datetime
@@ -93,11 +95,14 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
         if not building_info:
             return {"error": "건물 정보를 찾을 수 없습니다"}
 
-        # 4. 시세 조회
+        # 4. 시세 조회 [변경: building_type 전달]
         pnu_for_price = building_info.get('unique_number') or pnu
         area_size = building_info.get('exclusive_area')
 
-        market_price, price_source = estimate_market_price(pnu_for_price, area_size)
+        market_price, price_source = estimate_market_price(
+            pnu_for_price, area_size,
+            building_type=building_info.get('main_use', '')
+        )
 
         if market_price <= 0:
             return {"error": "시세 정보를 찾을 수 없어 분석할 수 없습니다"}
@@ -189,8 +194,11 @@ def predict_risk_with_ocr(
         pnu = ocr_features.get('unique_number', '')
         area_size = ocr_features.get('area_size')
 
-        # 2. 시세 조회
-        market_price, price_source = estimate_market_price(pnu, area_size)
+        # 2. 시세 조회 [변경: building_type 전달]
+        market_price, price_source = estimate_market_price(
+            pnu, area_size,
+            building_type=ocr_features.get('main_use', '')
+        )
 
         # 3. 공시지가 및 HUG 판단
         public_price = get_public_price(pnu, area_size)

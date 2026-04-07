@@ -7,6 +7,7 @@ import AddressSearchPage from '@/pages/AddressSearchPage'
 import AnalysisResultPage from '@/pages/AnalysisResultPage'
 import LoginPage from '@/pages/LoginPage'
 import SignupPage from '@/pages/SignupPage'
+import EmailVerifyPage from '@/pages/EmailVerifyPage'
 
 export const router = createBrowserRouter([
     {
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
         children: [
             { path: '/login', element: <LoginPage /> },
             { path: '/signup', element: <SignupPage /> },
+            { path: '/email-verify', element: <EmailVerifyPage/>}
         ],
     }
 ])

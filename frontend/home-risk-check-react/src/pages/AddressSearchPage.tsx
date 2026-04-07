@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import axios from "axios"
-import InputClear from "@/components/InputClear"
+import InputBasic from "@/components/InputBasic.tsx"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 
@@ -125,76 +125,75 @@ export default function AddressSearchPage() {
     }
 
     return (
-        <div className="px-4 my-6">
-            <div className="flex flex-col max-w-(--breakpoint-md) w-full mx-auto gap-6">
-                <InputClear
-                    placeholder="예) 판교역로 166, 분당 주공, 백현동 532"
-                    value={keyword}
-                    onChange={(val) => {
-                        setKeyword(validateKeyword(val))
-                    }}
-                />
+        <>
+            <InputBasic
+                placeholder="예) 판교역로 166, 분당 주공, 백현동 532"
+                value={keyword}
+                onChange={(val) => {
+                    setKeyword(validateKeyword(val))
+                }}
+                isClearable={true}
+            />
 
-                {/* 검색 팁 */}
-                {!keyword && (
-                    <div className="flex flex-col gap-2">
-                        <span className="font-bold">Tip</span>
-                        <span className="mb-4 text-sm text-gray-500">
+            {/* 검색 팁 */}
+            {!keyword && (
+                <div className="flex flex-col gap-2">
+                    <span className="font-bold">Tip</span>
+                    <span className="mb-4 text-sm text-gray-500">
                             아래와 같은 조합으로 검색하면 더 정확합니다
                         </span>
-                        <span>도로명 + 건물번호</span>
-                        <span className="text-blue-500">예) 판교역로 166</span>
-                        <span>지역명 + 번지</span>
-                        <span className="text-blue-500">예) 백현동 532</span>
-                        <span>건물명</span>
-                        <span className="text-blue-500">예) 분당 주공</span>
-                    </div>
-                )}
-
-                {/* 최초 로딩 */}
-                {isFetching && results.length === 0 && (
-                    <p className="text-center py-6 text-gray-400">
-                        검색 중...
-                    </p>
-                )}
-
-                {/* 결과 없음 */}
-                {!isFetching && results.length === 0 && keyword && (
-                    <p className="text-center py-6 text-gray-400">
-                        검색 결과가 없습니다
-                    </p>
-                )}
-
-                {/* 결과 리스트 */}
-                <div className="divide-y">
-                    {results.map((item, idx) => (
-                        <div
-                            key={`${item.roadAddr}-${idx}`}
-                            onClick={() => handleSelectAddress(item)}
-                            className="p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
-                        >
-                            <p className="font-medium text-sm">
-                                {item.roadAddr}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                                {item.jibunAddr}
-                            </p>
-                        </div>
-                    ))}
+                    <span>도로명 + 건물번호</span>
+                    <span className="text-blue-500">예) 판교역로 166</span>
+                    <span>지역명 + 번지</span>
+                    <span className="text-blue-500">예) 백현동 532</span>
+                    <span>건물명</span>
+                    <span className="text-blue-500">예) 분당 주공</span>
                 </div>
+            )}
 
-                {/* 추가 로딩 */}
-                {isFetchingNextPage && (
-                    <p className="text-center py-4 text-gray-400">
-                        더 불러오는 중...
-                    </p>
-                )}
+            {/* 최초 로딩 */}
+            {isFetching && results.length === 0 && (
+                <p className="text-center py-6 text-gray-400">
+                    검색 중...
+                </p>
+            )}
 
-                {/* 무한스크롤 트리거 */}
-                <div ref={observerRef} className="h-10" />
+            {/* 결과 없음 */}
+            {!isFetching && results.length === 0 && keyword && (
+                <p className="text-center py-6 text-gray-400">
+                    검색 결과가 없습니다
+                </p>
+            )}
 
-                <Toaster position="top-center" />
+            {/* 결과 리스트 */}
+            <div className="divide-y">
+                {results.map((item, idx) => (
+                    <div
+                        key={`${item.roadAddr}-${idx}`}
+                        onClick={() => handleSelectAddress(item)}
+                        className="p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
+                    >
+                        <p className="font-medium text-sm">
+                            {item.roadAddr}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {item.jibunAddr}
+                        </p>
+                    </div>
+                ))}
             </div>
-        </div>
+
+            {/* 추가 로딩 */}
+            {isFetchingNextPage && (
+                <p className="text-center py-4 text-gray-400">
+                    더 불러오는 중...
+                </p>
+            )}
+
+            {/* 무한스크롤 트리거 */}
+            <div ref={observerRef} className="h-10" />
+
+            <Toaster position="top-center" />
+        </>
     )
 }

@@ -9,7 +9,14 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "sgg_safety_stats")
+@Table(name = "sgg_safety_stats",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_sido_sgg",
+                        columnNames = {"sido_nm", "sgg_nm"}
+                )
+    }
+)
 public class SggSafetyStats {
 
     @Id
@@ -27,6 +34,9 @@ public class SggSafetyStats {
 
     @Column(name = "sgg_code", nullable = false)
     private String sggCode;
+
+    @Column(name = "sgisCode", length = 5)
+    private String sgisCode; // SGIS 행정코드(5자리)
 
     // 사고 통계 정보 (API 콜러가 나중에 채워줌)
     @Column(name = "acc_cnt")
@@ -76,5 +86,9 @@ public class SggSafetyStats {
         this.murderCnt = murderCnt;
         this.sexualCrimeCnt = sexualCrimeCnt;
         this.violenceCnt = violenceCnt;
+    }
+
+    public void updateSgisCode(String sgisCode) {
+        this.sgisCode = sgisCode;
     }
 }

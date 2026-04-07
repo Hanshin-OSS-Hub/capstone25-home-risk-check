@@ -10,7 +10,11 @@ import org.locationtech.jts.geom.Point;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "cctvs")
+@Table(name = "cctvs",
+        indexes = {
+                @Index(name = "idx_cctv_adm_code", columnList = "adm_code")
+        }
+)
 public  class Cctv {
 
     @Id
@@ -25,6 +29,9 @@ public  class Cctv {
     private String purpose;
 
     private Integer cameraCount;
+
+    @Column(name = "sgis_code")
+    private String sgisCode;
 
     @Column(nullable = false)
     private Point geometry;

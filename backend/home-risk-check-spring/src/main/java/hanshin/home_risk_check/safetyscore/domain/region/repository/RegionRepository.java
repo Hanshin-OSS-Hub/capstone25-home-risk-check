@@ -13,25 +13,26 @@ import java.util.Set;
 
 public interface RegionRepository extends JpaRepository<Region, Long> {
 
-    //admCode(String)으로 지역 정보 조회
-    Optional<Region> findByAdmCode(String admCode);
+    //sgisCode(String)으로 지역 정보 조회
+    Optional<Region> findBySgisCode(String sgisCode);
 
-    // 인구수가 NULL인 데이터가 하나라도 존재하는지 확인
-    boolean existsByPopulationIsNull();
+    @Query("SELECT r.sgisCode FROM Region r")
+    Set<String> findAllSgisCode();
 
-    // 인구수가 NULL인 모든 지역 목록 가져오기
-    List<Region> findAllByPopulationIsNull();
+    // DB에 점수 없는지 조회용 ( 기초 데이터 넣을때 사용)
+    boolean existsBySafetyScoreIsNull();
 
-    @Query("SELECT r.admCode FROM Region r")
-    Set<String> findAllAdmCodes();
+    //  특정 행정동(sgisCode)의 면적  계산
+    @Query(value = "SELECT ST_Area(ST_Transform(geometry, 3857)) " +
+            "FROM safety_regions " +
+            "WHERE sgis_code = :sgisCode",
+            nativeQuery = true)
+    Double getAreaBySgisCode(@Param("sgisCode") String sgisCode);
 
-    //sidoNm과 sggNm을 조건으로 매핑하여 해당하는 행정동들의 인구를 모두 합산
-    @Query("SELECT SUM(r.population) FROM Region r WHERE r.sidoNm = :sidoNm AND r.sggNm = :sggNm AND r.population > 0")
-    Integer sumPopulationBySidoNmAndSggNm(@Param("sidoNm") String sidoNm, @Param("sggNm") String sggNm);
+    // 카카오에서 주는 행정동 코드와 sgis 코드가 다르므로 카카오에서 주는 좌표로 속한 행정동 찾아옴
+    @Query(value = "SELECT * FROM safety_regions " +
+            "WHERE ST_Contains(geometry, ST_GeomFromText(CONCAT('POINT(', :lon, ' ', :lat, ')'), 4326, 'axis-order=long-lat')) " +
+            "LIMIT 1", nativeQuery = true)
+    Optional<Region> findByLocation(@Param("lon") double lon, @Param("lat") double lat);
 
-    // 이름 기반으로 특정 구에 속한 동을 한번에 업데이트
-    @Transactional
-    @Modifying
-    @Query("UPDATE Region r SET r.accidentScore = :score WHERE r.admNm LIKE :regionName%")
-    int updateAccidentScoreByAdmNm(@Param("regionName") String regionName, @Param("score") Double score);
 }

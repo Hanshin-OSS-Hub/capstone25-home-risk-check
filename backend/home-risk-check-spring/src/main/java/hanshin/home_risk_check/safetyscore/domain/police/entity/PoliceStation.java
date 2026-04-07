@@ -24,6 +24,9 @@ public class PoliceStation {
 
     private String address; // 주소
 
+    @Column(name = "sgisCode")
+    private String sgisCode;
+
     @Column(nullable = false)
     private Point geometry;
 

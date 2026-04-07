@@ -17,20 +17,14 @@ public class Region {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "adm_code", unique = true)
-    private String admCode; // 행정동 코드
+    @Column(name = "sgisCode", unique = true)
+    private String sgisCode; // 행정동 통계청 코드
 
     @Column(name = "adm_nm")
     private String admNm; //행정동 이름
 
     @Column(nullable = false)
     private MultiPolygon geometry;
-
-    @Column(name = "sido_nm", length = 50)
-    private String sidoNm; // 시도명 (예: 서울특별시)
-
-    @Column(name = "sgg_nm", length = 50)
-    private String sggNm;  // 시군구명 (예: 종로구)
 
     @Column(name = "population")
     private Integer population; //총 인구수 //null 처리를 위해 Integer 사용
@@ -51,8 +45,8 @@ public class Region {
     private Double safetyScore;   // 최종 합산 안전 점수
 
     @Builder
-    public Region(String admCode, String admNm, MultiPolygon geometry){
-        this.admCode = admCode;
+    public Region(String sgisCode, String admNm, MultiPolygon geometry){
+        this.sgisCode = sgisCode;
         this.admNm = admNm;
         this.geometry = geometry;
     }
@@ -62,12 +56,8 @@ public class Region {
         this.populationStatsYm = populationStatsYm;
     }
 
-    public void updateRegionNames(String sidoNm, String sggNm) {
-        this.sidoNm = sidoNm;
-        this.sggNm = sggNm;
-    }
 
-    public void updateScores(Double accidentZ,   Double infraZ, Double crimeZ, Double finalScore) {
+    public void updateScores( Double crimeZ ,Double accidentZ, Double infraZ, Double finalScore) {
         this.crimeScore = crimeZ;
         this.accidentScore = accidentZ;
         this.infraScore = infraZ;

@@ -1,6 +1,7 @@
 package hanshin.home_risk_check.safetyscore.config.loader;
 
 
+import hanshin.home_risk_check.safetyscore.config.SpatialRegionIndex;
 import hanshin.home_risk_check.safetyscore.domain.police.entity.PoliceStation;
 import hanshin.home_risk_check.safetyscore.domain.police.repository.PoliceStationRepository;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,8 +29,11 @@ public class PoliceDataLoader {
     private final JdbcTemplate jdbcTemplate;
     private final FileSyncService fileSyncService;
 
+    private final SpatialRegionIndex spatialRegionIndex;
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
     @Transactional
-    public void loadData() {
+    public boolean loadData() {
         try {
             // 파일 가져오기
             Resource[] resources = new PathMatchingResourcePatternResolver()
@@ -36,13 +41,13 @@ public class PoliceDataLoader {
 
             if (resources.length == 0){
                 log.warn("CSV 파일이 없습니다.");
-                return;
+                return false;
             }
 
-            String sql = "INSERT INTO police_stations (name, type, address, geometry) " +
-                    "VALUES (?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
+            String sql = "INSERT INTO police_stations (name, type, address,sgis_code , geometry) " +
+                    "VALUES (?, ?, ?, ? , ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "type = VALUES(type), address = VALUES(address), geometry = VALUES(geometry)";
+                    "type = VALUES(type), address = VALUES(address), sgis_code = VALUES(sgis_code), geometry = VALUES(geometry)";
 
             int totalProcessedCount = 0;
 
@@ -53,10 +58,10 @@ public class PoliceDataLoader {
                 boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
                 if (!isChanged) {
-                    log.info("경찰서 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
+                    log.info("[Police] 파일 변경 없음. 동기화를 건너뜁니다.");
                     continue;// 파일이 안 변했으면 바로 종료
                 }
-                log.info("{} 파일 변경 감지, 데이터 동기화를 시작합니다.", filename);
+                log.info("[Police] 파일 변경 감지. 데이터 동기화를 시작합니다...");
 
                 String mode = (filename != null && filename.contains("substation")) ? "SUB" : "MAIN";
 
@@ -68,12 +73,16 @@ public class PoliceDataLoader {
             }
 
             if (totalProcessedCount > 0) {
-                log.info("경찰관서 데이터  동기화 완료. 총 {}건이 추가 되었습니다.", totalProcessedCount);
+                log.info("[Police] 데이터 동기화 완료. (총 {}건 추가/업데이트)", totalProcessedCount);
+                return true;
             }
+
+            return false;
+
         } catch (Exception e) {
             log.error("경찰서 데이터 로드 중 오류 발생");
+            return false;
         }
-
     }
 
     /**
@@ -135,10 +144,22 @@ public class PoliceDataLoader {
                     // 한국 위도 범위를 벗어난 잘못된 데이터 좌표 걸러냄
                     if (lat < 33 || lat > 39) continue;
 
+                    Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
+                    String admCd = spatialRegionIndex.findSgisCode(point);
+                    if (admCd == null) {
+                        admCd = "";
+                    }
+
                     // WKT 문자열 형식으로 변환
                     String pointWkt = "POINT(" + lon + " " + lat + ")";
 
-                    batchArgs.add(new Object[]{name, type, address, pointWkt});
+                    batchArgs.add(new Object[]{
+                            name,
+                            type,
+                            address,
+                            admCd,
+                            pointWkt
+                    });
                     processedCount++;
 
                     if (batchArgs.size() == 1000) {

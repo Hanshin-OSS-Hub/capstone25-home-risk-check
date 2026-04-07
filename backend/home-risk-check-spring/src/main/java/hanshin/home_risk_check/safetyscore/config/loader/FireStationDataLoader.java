@@ -1,9 +1,14 @@
 package hanshin.home_risk_check.safetyscore.config.loader;
 
+import hanshin.home_risk_check.safetyscore.config.SpatialRegionIndex;
 import hanshin.home_risk_check.safetyscore.infra.api.KakaoApiCaller;
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,15 +32,18 @@ public class FireStationDataLoader {
     private final JdbcTemplate jdbcTemplate;
     private final FileSyncService fileSyncService;
 
+    private final SpatialRegionIndex spatialRegionIndex;
+    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+
     @Transactional
-    public void loadData() {
+    public boolean loadData() {
         try {
             Resource[] resources = new PathMatchingResourcePatternResolver()
                     .getResources("classpath:safetyscore/fire_station/*.csv");
 
             if (resources.length == 0) {
                 log.warn("소방서 CSV 파일을 찾을 수 없습니다.");
-                return;
+                return false;
             }
 
             Resource resource = resources[0];
@@ -44,16 +52,16 @@ public class FireStationDataLoader {
             boolean isChanged = fileSyncService.isChanged(filename, fileHash);
 
             if (!isChanged) {
-                log.info("소방서 CSV 파일 내용이 동일하여 데이터 적재를 건너뜁니다.");
-                return;
+                log.info("[FireStation] 파일 변경 없음. 동기화를 건너뜁니다.");
+                return false;
             }
 
-            log.info("소방서 CSV 파일 변경 감지. 데이터 동기화를 시작합니다.");
+            log.info("[FireStation] 파일 변경 감지. 데이터 동기화를 시작합니다... (Kakao API 연동)");
 
-            String insertSql = "INSERT INTO fire_stations (name, address, geometry) " +
-                    "VALUES (?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
+            String insertSql = "INSERT INTO fire_stations (name, address, sgis_code, geometry) " +
+                    "VALUES (?, ?, ?, ST_GeomFromText(?, 4326, 'axis-order=long-lat')) " +
                     "ON DUPLICATE KEY UPDATE " +
-                    "address = VALUES(address), geometry = VALUES(geometry)";
+                    "address = VALUES(address), sgis_code = VALUES(sgis_code), geometry = VALUES(geometry)";
 
             Map<String, String> addressFixMap = getAddressFixMap();
             List<Object[]> insertBatchArgs = new ArrayList<>();
@@ -87,12 +95,23 @@ public class FireStationDataLoader {
                     }
 
                     if (kakaoDoc != null) {
+
+                        double lon = Double.parseDouble(kakaoDoc.getX());
+                        double lat = Double.parseDouble(kakaoDoc.getY());
+
+                        Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
+                        String admCd = spatialRegionIndex.findSgisCode(point);
+                        if (admCd == null) {
+                            admCd = "";
+                        }
+
                         // 카카오가 찾아준 X(경도), Y(위도)로 POINT 생성
-                        String pointWkt = String.format("POINT(%s %s)", kakaoDoc.getX(), kakaoDoc.getY());
+                        String pointWkt = String.format("POINT(%s %s)", lon, lat);
 
                         insertBatchArgs.add(new Object[]{
                                 name, // 소방서 이름
                                 kakaoDoc.getAddress_name(), // 카카오가 정제해준 깔끔한 도로명/지번 주소
+                                admCd,
                                 pointWkt // 변환된 좌표
                         });
                         insertCount++;
@@ -112,17 +131,19 @@ public class FireStationDataLoader {
 
                 if (!failedAddresses.isEmpty()) {
                     log.warn("========================================");
-                    log.warn("카카오 API 좌표 변환 실패 목록 (총 {}건):", failedAddresses.size());
+                    log.warn("[FireStation] (Kakao API) 검색 실패 목록 (총 {}건):", failedAddresses.size());
                     failedAddresses.forEach(addr -> log.warn(" - {}", addr));
                     log.warn("========================================");
                 }
 
                 fileSyncService.updateSyncHistory(filename, fileHash);
-                log.info("소방서 데이터 자동 좌표 변환 및 동기화 완료. 총 {}건 추가되었습니다.", insertCount);
+                log.info("[FireStation] 데이터 동기화 완료. (총 {}건 추가/업데이트)", insertCount);
+                return true;
 
             }
         } catch (Exception e) {
             log.error("소방서 데이터 로딩 중 오류 발생", e);
+            return false;
         }
     }
 

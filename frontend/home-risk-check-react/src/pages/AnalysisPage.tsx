@@ -104,7 +104,7 @@ export default function AnalysisPage() {
                                     "분석 결과는 참고용으로만 활용해주세요.",
                                     "업로드한 파일은 분석 후 즉시 삭제되며 어떠한 형태로도 저장되지 않습니다.",
                                     "정확한 분석을 위해 최신 등기부등본과 건축물대장을 업로드해주세요.",
-                                    "분석 결과에 대한 책임은 사용자에게 있습니다.",
+                                    "서비스 이용 과정에서 발생하는 판단 및 선택의 책임은 사용자에게 있어요.",
                                 ].map((text) => (
                                     <li key={text}
                                         className="flex items-start gap-2 text-xs text-muted-foreground list-none">

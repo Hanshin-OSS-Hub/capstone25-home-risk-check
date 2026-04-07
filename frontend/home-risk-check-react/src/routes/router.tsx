@@ -3,6 +3,7 @@ import { RootLayout } from '@/components/layouts/RootLayout'
 // import { HomePage } from '@/pages/HomePage'
 import AnalysisPage from '@/pages/AnalysisPage'
 import AddressSearchPage from '@/pages/AddressSearchPage'
+import AnalysisResultPage from '@/pages/AnalysisResultPage'
 export const router = createBrowserRouter([
     {
         element: <RootLayout />,
@@ -10,6 +11,7 @@ export const router = createBrowserRouter([
             // { path: '/', element: <HomePage /> },
             { path: '/analysis', element: <AnalysisPage /> },
             { path: '/address-search', element: <AddressSearchPage /> },
+            { path: '/analysis-result', element: <AnalysisResultPage /> },
         ],
     },
 ])

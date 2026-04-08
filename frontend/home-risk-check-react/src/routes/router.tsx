@@ -8,6 +8,7 @@ import AnalysisResultPage from '@/pages/AnalysisResultPage'
 import LoginPage from '@/pages/LoginPage'
 import SignupPage from '@/pages/SignupPage'
 import EmailVerifyPage from '@/pages/EmailVerifyPage'
+import CommunityMainPage from '@/pages/CommunityMainPage'
 
 export const router = createBrowserRouter([
     {
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
             { path: '/analysis', element: <AnalysisPage /> },
             { path: '/address-search', element: <AddressSearchPage /> },
             { path: '/analysis-result', element: <AnalysisResultPage /> },
+            { path: '/community', element: <CommunityMainPage /> }
         ],
     },
     {

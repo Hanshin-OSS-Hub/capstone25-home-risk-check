@@ -14,6 +14,7 @@ interface InputClearProps {
     error?: string
     value: string
     onChange: (value: string) => void
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
     className?: string
     addonButton?: AddonButton
 }
@@ -32,6 +33,7 @@ const InputBasic = ({
                         error,
                         value,
                         onChange,
+                        onKeyDown,
                         className,
                         addonButton
                     }: InputClearProps) => {
@@ -53,6 +55,7 @@ const InputBasic = ({
                                  placeholder={placeholder}
                                  value={value}
                                  onChange={e => onChange(e.target.value)}
+                                 onKeyDown={onKeyDown}
                 />
                 <InputGroupAddon align="inline-end" className="gap-0">
                     {value && isClearable && (

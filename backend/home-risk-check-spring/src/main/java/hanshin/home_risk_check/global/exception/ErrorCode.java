@@ -16,9 +16,6 @@ public enum ErrorCode {
     FORBIDDEN_REQUEST(HttpStatus.FORBIDDEN, 403, "권한이 없습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, 400, "입력값이 올바르지 않습니다."),
 
-    /*
-     * 게시글 이미지 관련 예외
-     */
     POST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "게시글 이미지를 찾을 수 없습니다."),
     INVALID_POST_IMAGE(HttpStatus.BAD_REQUEST, 400, "해당 게시글의 이미지가 아닙니다."),
     TOO_MANY_IMAGES(HttpStatus.BAD_REQUEST, 400, "게시글 이미지는 최대 10장까지 업로드할 수 있습니다."),

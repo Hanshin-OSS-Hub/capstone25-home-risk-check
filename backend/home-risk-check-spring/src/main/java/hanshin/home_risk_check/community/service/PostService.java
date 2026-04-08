@@ -52,12 +52,14 @@ public class PostService {
                 .build();
 
         Post savedPost = postRepository.save(post);
+
         return PostResponse.from(savedPost);
     }
 
     @Transactional
     public PostResponse updatePost(Long postId, Long authorId, PostUpdateRequest request) {
         Post post = findPost(postId);
+
         validateAuthor(post.getAuthorId(), authorId);
 
         post.update(
@@ -74,12 +76,7 @@ public class PostService {
         Post post = findPost(postId);
         validateAuthor(post.getAuthorId(), authorId);
 
-        /*
-         * DB에서 게시글이 삭제되기 전에
-         * 연결된 실제 이미지 파일도 먼저 정리한다.
-         */
         postImageService.deleteAllFilesByPostId(postId);
-
         postRepository.delete(post);
     }
 

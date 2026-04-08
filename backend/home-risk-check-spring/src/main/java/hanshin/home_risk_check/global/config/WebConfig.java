@@ -9,11 +9,7 @@ import java.io.File;
 import java.nio.file.Paths;
 
 /*
- * 업로드된 로컬 파일을 정적 리소스로 접근 가능하게 만드는 설정
- *
- * 예:
- * /uploads/community/posts/1/xxx.png 요청 시
- * 실제 서버 파일 시스템의 uploads/community/posts/1/xxx.png 반환
+ * 업로드된 로컬 파일을 정적 리소스로 접근 가능하게 하는 설정
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

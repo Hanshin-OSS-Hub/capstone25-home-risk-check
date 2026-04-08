@@ -25,7 +25,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
-
         String message = "입력값이 올바르지 않습니다.";
 
         FieldError fieldError = e.getBindingResult().getFieldError();
@@ -38,9 +37,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ErrorCode.INVALID_INPUT_VALUE.getCode(), message));
     }
 
-    /*
-     * multipart 최대 업로드 용량 초과 처리
-     */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
         return ResponseEntity

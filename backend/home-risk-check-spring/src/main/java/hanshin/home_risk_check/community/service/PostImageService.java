@@ -22,12 +22,6 @@ import java.util.UUID;
 
 /*
  * 게시글 이미지 서비스
- *
- * 역할:
- * - 이미지 업로드
- * - 이미지 목록 조회
- * - 이미지 삭제
- * - 파일 메타데이터 DB 저장
  */
 @Service
 @RequiredArgsConstructor
@@ -49,9 +43,6 @@ public class PostImageService {
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
-    /*
-     * 특정 게시글의 이미지 목록 조회
-     */
     public List<PostImageResponse> getPostImages(Long postId) {
         validatePostExists(postId);
 
@@ -61,13 +52,6 @@ public class PostImageService {
                 .toList();
     }
 
-    /*
-     * 게시글 이미지 업로드
-     *
-     * 조건:
-     * - 게시글당 최대 10장
-     * - 한 번에 여러 장 업로드 가능
-     */
     @Transactional
     public List<PostImageResponse> uploadPostImages(Long postId, List<MultipartFile> images) {
         Post post = postRepository.findById(postId)
@@ -78,9 +62,9 @@ public class PostImageService {
         }
 
         long existingCount = postImageRepository.countByPost_PostId(postId);
-        long totalCount = existingCount + images.stream().filter(file -> file != null && !file.isEmpty()).count();
+        long newCount = images.stream().filter(file -> file != null && !file.isEmpty()).count();
 
-        if (totalCount > MAX_IMAGE_COUNT) {
+        if (existingCount + newCount > MAX_IMAGE_COUNT) {
             throw new BusinessException(ErrorCode.TOO_MANY_IMAGES);
         }
 
@@ -95,11 +79,9 @@ public class PostImageService {
         }
 
         List<PostImage> savedImages = new ArrayList<>();
-        int startOrder = (int) existingCount;
+        int imageOrder = (int) existingCount;
 
-        for (int i = 0; i < images.size(); i++) {
-            MultipartFile image = images.get(i);
-
+        for (MultipartFile image : images) {
             if (image == null || image.isEmpty()) {
                 continue;
             }
@@ -126,11 +108,12 @@ public class PostImageService {
                     .extension(extension)
                     .fileSize(image.getSize())
                     .filePath(filePath)
-                    .imageOrder(startOrder++)
+                    .imageOrder(imageOrder++)
                     .build();
 
-            savedImages.add(postImageRepository.save(postImage));
-            post.addImage(postImage);
+            PostImage saved = postImageRepository.save(postImage);
+            post.addImage(saved);
+            savedImages.add(saved);
         }
 
         return savedImages.stream()
@@ -138,9 +121,6 @@ public class PostImageService {
                 .toList();
     }
 
-    /*
-     * 게시글 이미지 단건 삭제
-     */
     @Transactional
     public void deletePostImage(Long postId, Long postImageId) {
         validatePostExists(postId);
@@ -156,9 +136,6 @@ public class PostImageService {
         postImageRepository.delete(postImage);
     }
 
-    /*
-     * 게시글 삭제 시 연결된 실제 파일도 지우기 위한 메서드
-     */
     @Transactional
     public void deleteAllFilesByPostId(Long postId) {
         List<PostImage> images = postImageRepository.findAllByPost_PostIdOrderByImageOrderAsc(postId);
@@ -200,7 +177,6 @@ public class PostImageService {
             Path fullPath = Paths.get(uploadDir).resolve(relativePath).toAbsolutePath().normalize();
             Files.deleteIfExists(fullPath);
         } catch (IOException ignored) {
-            // 파일 삭제 실패가 DB 처리까지 막지는 않도록 무시
         }
     }
 }

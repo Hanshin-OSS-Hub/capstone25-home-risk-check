@@ -10,13 +10,7 @@ import java.util.List;
  */
 public interface PostImageRepository extends JpaRepository<PostImage, Long> {
 
-    /*
-     * 특정 게시글에 연결된 이미지 목록 조회
-     */
     List<PostImage> findAllByPost_PostIdOrderByImageOrderAsc(Long postId);
 
-    /*
-     * 특정 게시글의 이미지 개수 조회
-     */
     long countByPost_PostId(Long postId);
 }

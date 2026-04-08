@@ -18,10 +18,8 @@ import java.util.List;
 /*
  * 게시글 Controller
  *
- * 기존 게시글 CRUD API는 유지하고,
- * 이미지 업로드/조회/삭제 API만 추가한다.
- *
- * 이렇게 하면 기존 프론트(JSON 기반 게시글 작성/수정)와 충돌을 최소화할 수 있다.
+ * 기존 게시글 CRUD는 그대로 두고,
+ * 이미지 API만 따로 추가한다.
  */
 @RestController
 @RequiredArgsConstructor
@@ -47,7 +45,7 @@ public class PostController {
 
     @PostMapping
     public ApiResponse<PostResponse> createPost(@RequestBody PostCreateRequest request) {
-        Long authorId = 1L; // TODO: 추후 JWT에서 사용자 ID 추출
+        Long authorId = 1L;
 
         return ApiResponse.success(
                 201,
@@ -61,7 +59,7 @@ public class PostController {
             @PathVariable Long postId,
             @RequestBody PostUpdateRequest request
     ) {
-        Long authorId = 1L; // TODO: 추후 JWT에서 사용자 ID 추출
+        Long authorId = 1L;
 
         return ApiResponse.success(
                 postService.updatePost(postId, authorId, request)
@@ -70,7 +68,7 @@ public class PostController {
 
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> deletePost(@PathVariable Long postId) {
-        Long authorId = 1L; // TODO: 추후 JWT에서 사용자 ID 추출
+        Long authorId = 1L;
 
         postService.deletePost(postId, authorId);
 
@@ -78,14 +76,8 @@ public class PostController {
     }
 
     /*
-     * 게시글 이미지 업로드 API
-     *
-     * POST /api/posts/{postId}/images
-     * Content-Type: multipart/form-data
-     * key: images (여러 개 가능)
-     *
-     * 기존 게시글 생성 API는 그대로 두고,
-     * 이미지만 따로 업로드하도록 분리했다.
+     * 게시글 이미지 업로드
+     * 게시글 1개당 최대 10장
      */
     @PostMapping(value = "/{postId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<List<PostImageResponse>> uploadPostImages(
@@ -100,7 +92,7 @@ public class PostController {
     }
 
     /*
-     * 게시글 이미지 목록 조회 API
+     * 게시글 이미지 목록 조회
      */
     @GetMapping("/{postId}/images")
     public ApiResponse<List<PostImageResponse>> getPostImages(@PathVariable Long postId) {
@@ -108,7 +100,7 @@ public class PostController {
     }
 
     /*
-     * 게시글 이미지 단건 삭제 API
+     * 게시글 이미지 단건 삭제
      */
     @DeleteMapping("/{postId}/images/{postImageId}")
     public ApiResponse<Void> deletePostImage(

@@ -12,7 +12,6 @@ import java.util.List;
 
 /*
  * 게시글 Entity
- * DB의 post 테이블과 매핑되는 클래스
  */
 @Entity
 @Table(name = "post")
@@ -52,9 +51,6 @@ public class Post {
 
     /*
      * 게시글 1개 -> 이미지 여러 장
-     *
-     * orphanRemoval = true:
-     * 게시글에서 제거된 이미지 엔티티는 DB에서도 삭제된다.
      */
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("imageOrder ASC")
@@ -86,9 +82,6 @@ public class Post {
         this.content = content;
     }
 
-    /*
-     * 게시글에 이미지 추가
-     */
     public void addImage(PostImage image) {
         this.images.add(image);
     }

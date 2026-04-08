@@ -9,10 +9,7 @@ import lombok.NoArgsConstructor;
 /*
  * 게시글 이미지 Entity
  *
- * 게시글 1개에 여러 장의 이미지가 연결될 수 있으므로
- * Post : PostImage = 1 : N 구조로 설계한다.
- *
- * 파일 자체는 서버 로컬 폴더에 저장하고,
+ * 파일은 로컬에 저장하고,
  * DB에는 파일 메타데이터만 저장한다.
  */
 @Entity
@@ -26,30 +23,24 @@ public class PostImage {
     @Column(name = "post_image_id")
     private Long postImageId;
 
-    /*
-     * 어떤 게시글에 속한 이미지인지
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
     /*
      * 사용자가 업로드한 원본 파일명
-     * 예: cat.png
      */
     @Column(name = "original_name", nullable = false, length = 255)
     private String originalName;
 
     /*
-     * 서버에 저장된 파일명
-     * 예: 3f8d...-cat.png
+     * 서버에 저장되는 파일명
      */
     @Column(name = "stored_name", nullable = false, length = 255)
     private String storedName;
 
     /*
      * 파일 확장자
-     * 예: png, jpg
      */
     @Column(name = "extension", nullable = false, length = 20)
     private String extension;
@@ -61,15 +52,14 @@ public class PostImage {
     private Long fileSize;
 
     /*
-     * 서버 저장 경로(또는 접근 경로)
-     * 예: /uploads/community/posts/1/3f8d...-cat.png
+     * 파일 접근 경로
+     * 예: /uploads/community/posts/1/uuid.png
      */
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;
 
     /*
      * 업로드 순서
-     * 프론트에서 보낸 순서를 유지하기 위해 사용
      */
     @Column(name = "image_order", nullable = false)
     private Integer imageOrder;

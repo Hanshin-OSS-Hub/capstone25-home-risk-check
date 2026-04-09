@@ -16,7 +16,7 @@ import java.util.List;
 @Table(name = "user", schema = "home_risk_check")
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @EntityListeners(AuditingEntityListener.class)

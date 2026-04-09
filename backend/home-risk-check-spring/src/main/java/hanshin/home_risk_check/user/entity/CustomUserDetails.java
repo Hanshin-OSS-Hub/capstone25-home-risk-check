@@ -42,5 +42,7 @@ public class CustomUserDetails implements UserDetails {
     @Override public boolean isEnabled()            { return true; }
 
     public Long getUserId() { return user.getId(); }
+    public String getEmail() { return user.getEmail(); }
     public String getNickname() { return user.getNickname(); }
+    public Role getRole() { return user.getRole(); }
 }

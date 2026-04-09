@@ -1,6 +1,6 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import axios from 'axios'
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -198,37 +198,39 @@ export default function CommunityMainPage(){
                 </div>
             </div>
 
-            <div className="space-y-4 divide-y">
+            <div className="flex flex-col gap-4 divide-y">
                 {blogPosts.map((post) => (
-                    <div className="flex gap-4 pb-4" key={post.title}>
-                        <div className="flex flex-1 flex-col gap-2">
-                            <Badge variant="secondary" className="rounded-sm text-gray-700">
-                                {post.category}
-                            </Badge>
-                            <h3 className="line-clamp-1 text-ellipsis font-medium text-sm sm:text-base">
-                                {post.title}
-                            </h3>
-                            <p className="line-clamp-1 text-ellipsis text-sm text-muted-foreground">
-                                {post.description}
-                            </p>
-                            <div className="flex items-center gap-0.5 text-muted-foreground text-xs">
-                                바람이 분당구
-                                <span>&middot;</span>
-                                1일전
-                            </div>
-                            <div className="flex items-center gap-4 font-medium text-muted-foreground text-sm">
-                                <div className="flex items-center gap-1">
-                                    <Heart className="h-4 w-4" /> 12
+                    <Link to="/community/${post.title}">
+                        <div className="flex gap-4 pb-4" key={post.title}>
+                            <div className="flex flex-1 flex-col gap-2">
+                                <Badge variant="secondary" className="rounded-sm text-gray-700">
+                                    {post.category}
+                                </Badge>
+                                <h3 className="line-clamp-1 text-ellipsis font-medium text-sm sm:text-base">
+                                    {post.title}
+                                </h3>
+                                <p className="line-clamp-1 text-ellipsis text-sm text-muted-foreground">
+                                    {post.description}
+                                </p>
+                                <div className="flex items-center gap-0.5 text-muted-foreground text-xs">
+                                    바람이 분당구
+                                    <span>&middot;</span>
+                                    1일전
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <MessageSquareText className="h-4 w-4" /> 53
+                                <div className="flex items-center gap-4 font-medium text-muted-foreground text-sm">
+                                    <div className="flex items-center gap-1">
+                                        <Heart className="h-4 w-4" /> 12
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <MessageSquareText className="h-4 w-4" /> 53
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="shrink-0 w-22 aspect-square self-start rounded-lg bg-gray-200">
+                            <div className="shrink-0 w-22 aspect-square self-start rounded-lg bg-gray-200">
 
+                            </div>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
         </>

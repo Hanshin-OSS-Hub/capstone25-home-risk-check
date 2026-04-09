@@ -1,5 +1,6 @@
 package hanshin.home_risk_check.user.dto;
 
+import hanshin.home_risk_check.user.entity.Role;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,7 +13,7 @@ public class UserResponse {
     private String email;
     private String nickname;
     private String profileImageUrl;
-    private String role;
+    private Role role;
     private LocalDateTime regDate;
     private LocalDateTime updDate;
 }

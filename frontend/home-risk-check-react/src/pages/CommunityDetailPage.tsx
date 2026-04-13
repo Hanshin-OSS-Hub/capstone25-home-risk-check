@@ -133,7 +133,7 @@ export default function CommunityDetailPage() {
                     <Avatar size="default">
                         <AvatarImage src="https://github.com/shadcn.png"/>
                     </Avatar>
-                    <Textarea ref={textareaRef} className="rounded-md bg-gray-100 min-h-10" placeholder="댓글을 작성해주세요"/>
+                    <Textarea ref={textareaRef} className="rounded-md bg-gray-100 min-h-10 border-none" placeholder="댓글을 작성해주세요"/>
                 </div>
                 <div className="flex justify-end">
                     <Button className="rounded-md w-fit cursor-pointer">댓글 작성</Button>
@@ -160,7 +160,7 @@ export default function CommunityDetailPage() {
                                     <Avatar size="default">
                                         <AvatarImage src="https://github.com/shadcn.png"/>
                                     </Avatar>
-                                    <Textarea ref={replyingTextareaRef} className="rounded-md bg-gray-100 min-h-10" placeholder="답글을 작성해주세요"/>
+                                    <Textarea ref={replyingTextareaRef} className="rounded-md bg-gray-100 min-h-10 border-none" placeholder="답글을 작성해주세요"/>
                                 </div>
                                 <div className="flex justify-end">
                                     <Button className="rounded-md w-fit cursor-pointer">답글 작성</Button>

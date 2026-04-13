@@ -10,6 +10,7 @@ import SignupPage from '@/pages/SignupPage'
 import EmailVerifyPage from '@/pages/EmailVerifyPage'
 import CommunityMainPage from '@/pages/CommunityMainPage'
 import CommunityDetailPage from '@/pages/CommunityDetailPage'
+import CommunityCreatePage from '@/pages/CommunityCreatePage'
 
 export const router = createBrowserRouter([
     {
@@ -20,7 +21,8 @@ export const router = createBrowserRouter([
             { path: '/address-search', element: <AddressSearchPage /> },
             { path: '/analysis-result', element: <AnalysisResultPage /> },
             { path: '/community', element: <CommunityMainPage /> },
-            { path: '/community/:id', element: <CommunityDetailPage /> }
+            { path: '/community/:id', element: <CommunityDetailPage /> },
+            { path: '/community/new', element: <CommunityCreatePage/>}
         ],
     },
     {

@@ -1,11 +1,11 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import { useEffect, useState } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import {useSearchParams, Link, Outlet} from 'react-router-dom'
 import axios from 'axios'
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { Heart, MessageSquareText } from "lucide-react";
+import { Heart, MessageSquareText, PlusIcon } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -166,9 +166,9 @@ export default function CommunityMainPage(){
                 isClearable={true}
             />
 
-            <div className="flex items-center gap-1 -mt-2">
+            <div className="flex items-center gap-1 -mt-4">
                 <Select value={sort} onValueChange={(value) => handleSortChange(value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl">
                         <SelectValue placeholder="정렬">
                             {sort === 'latest' ? '최신순' : '인기순'}
                         </SelectValue>
@@ -186,7 +186,7 @@ export default function CommunityMainPage(){
                         <Button
                             key={cat.key}
                             className={cn(
-                                "rounded-full text-sm cursor-pointer font-normal bg-gray-100 text-gray-800",
+                                "rounded-xl text-sm cursor-pointer font-normal bg-gray-100 text-gray-800",
                                 category === cat.key && "bg-black text-white hover:bg-black"
                             )}
                             onClick={() => handleCategoryChange(cat.key)}
@@ -200,7 +200,7 @@ export default function CommunityMainPage(){
 
             <div className="flex flex-col gap-4 divide-y">
                 {blogPosts.map((post) => (
-                    <Link to="/community/${post.title}">
+                    <Link to={`/community/${post.title}`}>
                         <div className="flex gap-4 pb-4" key={post.title}>
                             <div className="flex flex-1 flex-col gap-2">
                                 <Badge variant="secondary" className="rounded-sm text-gray-700">
@@ -227,11 +227,18 @@ export default function CommunityMainPage(){
                                 </div>
                             </div>
                             <div className="shrink-0 w-22 aspect-square self-start rounded-lg bg-gray-200">
-
+                                {/* 게시글 이미지 영역*/}
                             </div>
                         </div>
                     </Link>
                 ))}
+            </div>
+            <div className="sticky bottom-6 flex justify-end -mt-6">
+                <Link to="/community/new">
+                    <Button className="rounded-full w-12 h-12 shadow-lg cursor-pointer" size="icon">
+                        <PlusIcon />
+                    </Button>
+                </Link>
             </div>
         </>
     )

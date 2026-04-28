@@ -121,7 +121,7 @@ export default function AnalysisPage() {
                             isReadOnly={true}
                             addonButton={{
                                 label:"주소 검색",
-                                onClick :() => navigate("/address-search")
+                                onClick :() => navigate("/address-search", {state: {from: location.pathname}})
                             }}
                 />
             </div>

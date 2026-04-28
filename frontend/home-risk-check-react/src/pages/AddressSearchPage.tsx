@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import axios from "axios"
 import InputBasic from "@/components/InputBasic.tsx"
@@ -10,6 +10,7 @@ export default function AddressSearchPage() {
     const [keyword, setKeyword] = useState("")
     const [debouncedKeyword, setDebouncedKeyword] = useState("")
     const navigate = useNavigate()
+    const location = useLocation()
     const observerRef = useRef<HTMLDivElement | null>(null)
     const API_KEY = import.meta.env.VITE_JUSO_API_KEY
 
@@ -119,8 +120,10 @@ export default function AddressSearchPage() {
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     const handleSelectAddress = (item: any) => {
-        navigate("/analysis", {
-            state: { address: item.roadAddrPart1 },
+        const from = location.state?.from
+        navigate(from, {
+            state: { address: item.roadAddrPart1, buildingName: item.bdNm },
+            replace:true
         })
     }
 

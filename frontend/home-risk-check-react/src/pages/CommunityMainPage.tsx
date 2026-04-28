@@ -1,11 +1,11 @@
 import InputBasic from "@/components/InputBasic.tsx";
-import { useEffect, useState } from 'react'
-import {useSearchParams, Link, Outlet} from 'react-router-dom'
+import {useEffect, useState} from 'react'
+import {useSearchParams, Link} from 'react-router-dom'
 import axios from 'axios'
-import { cn } from "@/lib/utils.ts";
-import { Button } from "@/components/ui/button.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
-import { Heart, MessageSquareText, PlusIcon } from "lucide-react";
+import {cn} from "@/lib/utils.ts";
+import {Button} from "@/components/ui/button.tsx";
+import {Badge} from "@/components/ui/badge.tsx";
+import {Heart, MessageSquareText, PlusIcon} from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -100,15 +100,15 @@ const blogPosts = [
 ];
 
 const categories = [
-    { key: "all", label: "전체" },
-    { key: "damage", label: "⚠️ 피해 사례" },
-    { key: "fraud", label: "🚨 사기 의심" },
-    { key: "law", label: "🧑‍⚖️ 대응/법률" },
-    { key: "region", label: "🔍 지역 정보" },
-    { key: "question", label: "❓ 질문" },
+    {key: "all", label: "전체"},
+    {key: "damage", label: "⚠️ 피해 사례"},
+    {key: "fraud", label: "🚨 사기 의심"},
+    {key: "law", label: "🧑‍⚖️ 대응/법률"},
+    {key: "region", label: "🔍 지역 정보"},
+    {key: "question", label: "❓ 질문"},
 ];
 
-export default function CommunityMainPage(){
+export default function CommunityMainPage() {
     const [searchParams, setSearchParams] = useSearchParams()
     const [posts, setPosts] = useState([])
     const [keyword, setKeyword] = useState('')
@@ -117,11 +117,29 @@ export default function CommunityMainPage(){
     const category = searchParams.get('category') || 'all'
     const query = searchParams.get('query') || ''
 
+    const [isTop, setIsTop] = useState(true);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 100) {
+                setIsTop(false);
+            } else {
+                setIsTop(true);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+        };
+    }, []);
+
     useEffect(() => {
         (async () => {
             try {
                 const res = await axios.get('/api/posts', {
-                    params: { sort, category, query }
+                    params: {sort, category, query}
                 })
                 setPosts(res.data)
             } catch (e) {
@@ -134,7 +152,7 @@ export default function CommunityMainPage(){
         setSearchParams({
             sort: newSort,
             category,
-            ...(query && { query })
+            ...(query && {query})
         })
     }
 
@@ -142,7 +160,7 @@ export default function CommunityMainPage(){
         setSearchParams({
             sort,
             category: newCategory,
-            ...(query && { query })
+            ...(query && {query})
         })
     }
 
@@ -150,7 +168,7 @@ export default function CommunityMainPage(){
         setSearchParams({
             sort,
             category,
-            ...(keyword.trim() && { query: keyword.trim() })
+            ...(keyword.trim() && {query: keyword.trim()})
         })
     }
 
@@ -166,7 +184,7 @@ export default function CommunityMainPage(){
                 isClearable={true}
             />
 
-            <div className="flex items-center gap-1 -mt-4">
+            <div className="flex items-center gap-1">
                 <Select value={sort} onValueChange={(value) => handleSortChange(value)}>
                     <SelectTrigger className="rounded-xl">
                         <SelectValue placeholder="정렬">
@@ -219,10 +237,10 @@ export default function CommunityMainPage(){
                                 </div>
                                 <div className="flex items-center gap-4 font-medium text-muted-foreground text-sm">
                                     <div className="flex items-center gap-1">
-                                        <Heart className="h-4 w-4" /> 12
+                                        <Heart className="h-4 w-4"/> 12
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <MessageSquareText className="h-4 w-4" /> 53
+                                        <MessageSquareText className="h-4 w-4"/> 53
                                     </div>
                                 </div>
                             </div>
@@ -235,8 +253,20 @@ export default function CommunityMainPage(){
             </div>
             <div className="sticky bottom-6 flex justify-end -mt-6">
                 <Link to="/community/new">
-                    <Button className="rounded-full w-12 h-12 shadow-lg cursor-pointer" size="icon">
-                        <PlusIcon />
+                    <Button
+                        className={cn(
+                            "rounded-full h-12 cursor-pointer transition-all duration-300 overflow-hidden",
+                            isTop ? "w-22 gap-1" : "w-12"
+                        )}
+                        size="icon-lg"
+                    >
+                        <PlusIcon/>
+                        <span className={cn(
+                            "transition-all duration-300 ease-out overflow-hidden whitespace-nowrap",
+                            isTop ? "max-w-fit opacity-100" : "max-w-0 opacity-0",
+                        )}>
+                            글쓰기
+                        </span>
                     </Button>
                 </Link>
             </div>

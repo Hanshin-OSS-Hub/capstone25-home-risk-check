@@ -1,3 +1,9 @@
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupTextarea,
+} from "@/components/ui/input-group";
 import {useEffect, useState, useRef} from 'react'
 import {useParams} from 'react-router-dom'
 import {Textarea} from "@/components/ui/textarea.tsx";
@@ -82,18 +88,11 @@ export default function CommunityDetailPage() {
     const { postId } = useParams()
     const [comments, setComments] = useState<any[]>([])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const replyingTextareaRef = useRef<HTMLTextAreaElement>(null)
     const [openReplyId, setOpenReplyId] = useState<number | null>(null)
 
     const focusTextarea = () => {
         textareaRef.current?.focus()
     }
-
-    useEffect(() => {
-        if (openReplyId !== null) {
-            replyingTextareaRef.current?.focus()
-        }
-    }, [openReplyId])
 
     useEffect(() => {
         // axios.get(`/api/posts/${postId}/comments`)
@@ -128,16 +127,22 @@ export default function CommunityDetailPage() {
                     </div>
                 </div>
             </div>
-            <div className="flex flex-col gap-2">
-                <div className="flex items-start gap-2">
-                    <Avatar size="default">
-                        <AvatarImage src="https://github.com/shadcn.png"/>
-                    </Avatar>
-                    <Textarea ref={textareaRef} className="rounded-md bg-gray-100 min-h-10 border-none" placeholder="댓글을 작성해주세요"/>
-                </div>
-                <div className="flex justify-end">
-                    <Button className="rounded-md w-fit cursor-pointer">댓글 작성</Button>
-                </div>
+            <div className="flex items-start gap-2">
+                <Avatar size="default">
+                    <AvatarImage src="https://github.com/shadcn.png"/>
+                </Avatar>
+                <InputGroup className="!rounded-xl bg-gray-100 border-none">
+                    <InputGroupTextarea
+                        ref={textareaRef}
+                        className="min-h-10 p-3"
+                        placeholder="댓글을 작성해주세요"
+                    />
+                    <InputGroupAddon align="block-end" className="pt-0">
+                        <InputGroupButton className="ml-auto rounded-xl cursor-pointer" size="sm" variant="default">
+                            댓글 작성
+                        </InputGroupButton>
+                    </InputGroupAddon>
+                </InputGroup>
             </div>
             <div className="flex flex-col gap-4">
                 {comments
@@ -155,16 +160,22 @@ export default function CommunityDetailPage() {
                             </div>
                         ))}
                         {openReplyId === comment.commentId && (
-                            <div className="flex flex-col gap-2 ml-10">
-                                <div className="flex items-start gap-2">
-                                    <Avatar size="default">
-                                        <AvatarImage src="https://github.com/shadcn.png"/>
-                                    </Avatar>
-                                    <Textarea ref={replyingTextareaRef} className="rounded-md bg-gray-100 min-h-10 border-none" placeholder="답글을 작성해주세요"/>
-                                </div>
-                                <div className="flex justify-end">
-                                    <Button className="rounded-md w-fit cursor-pointer">답글 작성</Button>
-                                </div>
+                            <div className="flex items-start gap-2">
+                                <Avatar size="default">
+                                    <AvatarImage src="https://github.com/shadcn.png"/>
+                                </Avatar>
+                                <InputGroup className="!rounded-xl bg-gray-100 min-h-10 border-none">
+                                    <InputGroupTextarea
+                                        ref={(el) => { if (el) el.focus() }}
+                                        className="min-h-10 p-3"
+                                        placeholder="댓글을 작성해주세요"
+                                    />
+                                    <InputGroupAddon align="block-end" className="pt-0">
+                                        <InputGroupButton className="ml-auto rounded-xl cursor-pointer" size="sm" variant="default">
+                                            댓글 작성
+                                        </InputGroupButton>
+                                    </InputGroupAddon>
+                                </InputGroup>
                             </div>
                         )}
                     </div>

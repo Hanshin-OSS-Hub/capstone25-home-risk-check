@@ -7,7 +7,7 @@ import {cn} from '@/lib/utils'
 import {useMemo, useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useNavigate} from 'react-router-dom'
-import {signupStore} from '@/store/signupStore'
+import {signupStore} from '@/stores/signupStore'
 import axios from 'axios'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

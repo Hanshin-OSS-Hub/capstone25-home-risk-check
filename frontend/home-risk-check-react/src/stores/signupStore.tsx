@@ -7,11 +7,13 @@ interface SignupStore {
     password : string
     isNicknameChecked: boolean
     isEmailVerified: boolean
+
     setNickname : (nickname: string) => void
     setEmail: (email: string) => void
     setPassword : (password: string) => void
     setIsNicknameChecked: (v: boolean) => void
     setIsEmailVerified: (v: boolean) => void
+
     reset: () => void
 }
 

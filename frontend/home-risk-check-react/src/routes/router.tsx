@@ -11,6 +11,8 @@ import EmailVerifyPage from '@/pages/EmailVerifyPage'
 import CommunityMainPage from '@/pages/CommunityMainPage'
 import CommunityDetailPage from '@/pages/CommunityDetailPage'
 import CommunityCreatePage from '@/pages/CommunityCreatePage'
+import PlaceSearchPage from '@/pages/PlaceSearchPage'
+import PollCreatePage from '@/pages/PollCreatePage'
 
 export const router = createBrowserRouter([
     {
@@ -22,7 +24,9 @@ export const router = createBrowserRouter([
             { path: '/analysis-result', element: <AnalysisResultPage /> },
             { path: '/community', element: <CommunityMainPage /> },
             { path: '/community/:id', element: <CommunityDetailPage /> },
-            { path: '/community/new', element: <CommunityCreatePage/>}
+            { path: '/community/new', element: <CommunityCreatePage/>},
+            { path: '/place-search', element: <PlaceSearchPage /> },
+            { path: '/community/poll/new', element: <PollCreatePage /> }
         ],
     },
     {

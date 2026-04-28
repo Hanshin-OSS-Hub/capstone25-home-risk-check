@@ -2,7 +2,7 @@ import {Button} from '@/components/ui/button'
 import InputCode from '@/components/InputCode'
 import {useState} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {signupStore} from '@/store/signupStore'
+import {signupStore} from '@/stores/signupStore'
 
 export default function EmailVerifyPage() {
     const navigate = useNavigate()

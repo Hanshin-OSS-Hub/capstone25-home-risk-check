@@ -47,7 +47,11 @@ const InputBasic = ({
 
     return (
         <Field className="gap-2">
-            <FieldLabel id={id} className="font-medium text-xs">{label}</FieldLabel>
+            {label && (
+                <FieldLabel id={id} className="font-medium text-xs">
+                    {label}
+                </FieldLabel>
+            )}
             <InputGroup className={cn("h-12 bg-gray-100 border-none rounded-xl", className)}>
                 <InputGroupInput id={id} readOnly={isReadOnly}
                                  ref={inputRef}
@@ -74,7 +78,9 @@ const InputBasic = ({
                     )}
                 </InputGroupAddon>
             </InputGroup>
-            <FieldDescription className="text-xs text-red-700">{error}</FieldDescription>
+            {error && (
+                <FieldDescription className="text-xs text-red-700">{error}</FieldDescription>
+            )}
         </Field>
     )
 }

@@ -9,46 +9,29 @@ import {useParams} from 'react-router-dom'
 import axios from 'axios'
 import {Avatar, AvatarImage} from "@/components/ui/avatar.tsx";
 import {Heart, MessageSquareText} from "lucide-react";
+import {mockComments} from "@/__mocks__/mockComments.ts";
+import type {Comment, CommentTree} from "@/types/comment.ts";
 
-const mockComments = [
-    {
-        commentId: 1,
-        parentCommentId: null,
-        authorNickname: "바람이분당구",
-        content: "분당구에 바람이 많이 부는 이유는 지형적 요인 때문입니다.",
-        createdAt: "1시간전",
-        likes: 12,
-        children: [
-            {
-                commentId: 2,
-                parentCommentId: 1,
-                authorNickname: "판교러",
-                content: "동감이에요. 저도 항상 느꼈어요.",
-                createdAt: "30분전",
-                likes: 3,
-                children: []
-            },
-            {
-                commentId: 3,
-                parentCommentId: 1,
-                authorNickname: "성남시민",
-                content: "맞아요 특히 겨울에 심하죠.",
-                createdAt: "20분전",
-                likes: 1,
-                children: []
+function buildCommentTree(flat: Comment[]): CommentTree[] {
+    const map = new Map<number, CommentTree>()
+    const roots: CommentTree[] = []
+
+    flat.forEach((c) => {
+        map.set(c.commentId, { ...c, children: [] })
+    })
+
+    map.forEach((comment) => {
+        if (comment.parentCommentId === null) {
+            roots.push(comment)
+        } else {
+            const parent = map.get(comment.parentCommentId)
+            if (parent) {
+                parent.children.push(comment)
             }
-        ]
-    },
-    {
-        commentId: 4,
-        parentCommentId: null,
-        authorNickname: "정자동주민",
-        content: "산이 가까워서 그런 것 같아요.",
-        createdAt: "2시간전",
-        likes: 5,
-        children: []
-    }
-]
+        }
+    })
+    return roots
+}
 
 function CommentItem({ comment, isReply = false, onReplyClick }: { comment: any, isReply?: boolean, onReplyClick?: () => void }) {
     return (
@@ -86,6 +69,7 @@ export default function CommunityDetailPage() {
     const { postId } = useParams()
     const [comments, setComments] = useState<any[]>([])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const replyRef = useRef<HTMLTextAreaElement>(null)
     const [openReplyId, setOpenReplyId] = useState<number | null>(null)
 
     const focusTextarea = () => {
@@ -93,9 +77,15 @@ export default function CommunityDetailPage() {
     }
 
     useEffect(() => {
-        // axios.get(`/api/posts/${postId}/comments`)
-        //     .then(res => setComments(res.data))
-        setComments(mockComments)
+        if (openReplyId !== null) replyRef.current?.focus()
+    }, [openReplyId])
+
+    useEffect(() => {
+        if (import.meta.env.VITE_USE_MOCK === 'true') {
+            setComments(buildCommentTree(mockComments))
+        }
+        axios.get(`/api/posts/${postId}/comments`)
+            .then(res => setComments(buildCommentTree(res.data)))
     }, [postId])
 
     return (
@@ -164,7 +154,7 @@ export default function CommunityDetailPage() {
                                 </Avatar>
                                 <InputGroup className="!rounded-xl bg-gray-100 min-h-10 border-none">
                                     <InputGroupTextarea
-                                        ref={(el) => { if (el) el.focus() }}
+                                        ref={replyRef}
                                         className="min-h-10 p-3"
                                         placeholder="댓글을 작성해주세요"
                                     />

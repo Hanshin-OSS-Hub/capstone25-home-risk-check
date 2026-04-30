@@ -27,7 +27,7 @@ export const router = createBrowserRouter([
 
             // 로그인 필요
             {
-                element: <PrivateLayout />,
+                // element: <PrivateLayout />,
                 children: [
                     { path: '/analysis', element: <AnalysisPage /> },
                     { path: '/community/new', element: <CommunityCreatePage /> },

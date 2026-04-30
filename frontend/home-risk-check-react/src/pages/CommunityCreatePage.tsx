@@ -22,8 +22,10 @@ import {Textarea} from "@/components/ui/textarea.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {useEffect, useRef} from "react";
 import {useNavigate, useBlocker } from "react-router-dom";
-import {communityCreateStore} from "@/stores/communityCreateStore.tsx";
+import {communityCreateStore} from "@/stores/communityCreateStore.ts";
 import {Image, MapPin, X, Vote} from "lucide-react";
+import mapPinMarker from '@/assets/mapPinMarker.png'
+import {COMMUNITY_CATEGORIES} from "@/constants/category.ts";
 
 export default function CommunityCreatePage() {
     const {
@@ -38,41 +40,39 @@ export default function CommunityCreatePage() {
     } = communityCreateStore()
     const navigate = useNavigate()
     const mapRef = useRef<HTMLDivElement>(null)
+    const markerRef = useRef<any>(null)
     const mapInstance = useRef<any>(null);
 
     useEffect(() => {
-        if (!placeLat || !placeLng) return;
-        const kakao = (window as any).kakao;
-        const lat = Number(placeLat);
-        const lng = Number(placeLng);
+        if (!placeLat || !placeLng) return
+        const kakao = (window as any).kakao
+        const pos = new kakao.maps.LatLng(placeLat, placeLng)
+        const markerImage = new kakao.maps.MarkerImage(
+            mapPinMarker,
+            new kakao.maps.Size(80, 80),
+            new kakao.maps.Point(40, 62),
+        );
 
-        // 최초 생성
         if (!mapInstance.current) {
-            mapInstance.current = new kakao.maps.Map(mapRef.current, {
-                center: new kakao.maps.LatLng(lat, lng),
-                level: 3,
-            });
-
-            mapInstance.current.setDraggable(false);
-            mapInstance.current.setZoomable(false);
+            mapInstance.current = new kakao.maps.Map(mapRef.current, { center: pos, level: 3 })
+            mapInstance.current.setDraggable(false)
+            mapInstance.current.setZoomable(false)
+        } else {
+            mapInstance.current.setCenter(pos)
         }
 
-        const mapPinSrc = '/src/assets/mapPinMarker.png';
-        const markerImage = new kakao.maps.MarkerImage(mapPinSrc, new kakao.maps.Size(80, 80), new kakao.maps.Point(40, 62));
-
-        // 위치 이동
-        const moveLatLng = new kakao.maps.LatLng(lat, lng);
-        mapInstance.current.setCenter(moveLatLng);
-
-        // 마커도 업데이트
-        new kakao.maps.Marker({
-            position: moveLatLng,
+        if (markerRef.current) markerRef.current.setMap(null)
+        markerRef.current = new kakao.maps.Marker({
+            position: pos,
             map: mapInstance.current,
             image: markerImage,
             clickable: false,
-        });
+        })
 
-    }, [placeLat, placeLng]);
+        return () => {
+            markerRef.current?.setMap(null)
+        }
+    }, [placeLat, placeLng])
 
     const handlePreview = (file: File) => {
         const url = URL.createObjectURL(file);
@@ -115,8 +115,8 @@ export default function CommunityCreatePage() {
         content.trim() !== "" ||
         images.length > 0 ||
         poll !== null ||
-        placeLat !== "" ||
-        placeLng !== "";
+        placeLat !== null ||
+        placeLng !== null;
 
     const blocker = useBlocker(
         ({ currentLocation, nextLocation }) =>
@@ -195,12 +195,13 @@ export default function CommunityCreatePage() {
                     <SelectContent>
                         <SelectGroup>
                             <SelectLabel>카테고리</SelectLabel>
-                            <SelectItem value='all'>전체</SelectItem>
-                            <SelectItem value='damage'>⚠️ 피해 사례</SelectItem>
-                            <SelectItem value='fraud'>🚨 사기 의심</SelectItem>
-                            <SelectItem value='law'>🧑‍⚖️ 대응/법률</SelectItem>
-                            <SelectItem value='region'>🔍 지역 정보</SelectItem>
-                            <SelectItem value='question'>❓ 질문</SelectItem>
+                            {COMMUNITY_CATEGORIES
+                                .filter((cat) => cat.key !== 'all')
+                                .map((cat) => (
+                                    <SelectItem key={cat.key} value={cat.key}>
+                                        {cat.label}
+                                    </SelectItem>
+                                ))}
                         </SelectGroup>
                     </SelectContent>
                 </Select>
@@ -270,8 +271,8 @@ export default function CommunityCreatePage() {
                                 size="icon"
                                 className="absolute top-2 right-4 size-6 z-10 cursor-pointer "
                                 onClick={() => {
-                                    setPlaceLat('');
-                                    setPlaceLng('');
+                                    setPlaceLat(null);
+                                    setPlaceLng(null);
                                 }}
                             >
                                 <X className="size-3" />

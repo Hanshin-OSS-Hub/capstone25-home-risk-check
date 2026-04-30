@@ -1,5 +1,3 @@
-'use client'
-
 import {useId, useRef} from 'react'
 import {CircleXIcon} from 'lucide-react'
 import {cn} from '@/lib/utils'

@@ -1,9 +1,10 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import {useEffect, useRef, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
-import {communityCreateStore} from "@/stores/communityCreateStore.tsx";
+import {communityCreateStore} from "@/stores/communityCreateStore.ts";
+import mapPinMarker from '@/assets/mapPinMarker.png'
 
-export default function CommunityDetailPage() {
+export default function placeSearchPage() {
     const [address, setAddress] = useState('')
     const [placeResponse, setPlaceResponse] = useState<any[]>([])
     const {setPlaceLat, setPlaceLng} = communityCreateStore()
@@ -42,8 +43,12 @@ export default function CommunityDetailPage() {
             maxLevel: 5,
         });
 
-        const mapPinSrc = '/src/assets/mapPinMarker.png';
-        const markerImage = new kakao.maps.MarkerImage(mapPinSrc, new kakao.maps.Size(80, 80), new kakao.maps.Point(40, 62));
+        const markerImage = new kakao.maps.MarkerImage(
+            mapPinMarker,
+            new kakao.maps.Size(80, 80),
+            new kakao.maps.Point(40, 62),
+        );
+
 
         const ps = new kakao.maps.services.Places(map);
         let markers: any[] = [];

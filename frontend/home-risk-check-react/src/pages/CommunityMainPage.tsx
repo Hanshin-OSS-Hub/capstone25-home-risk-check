@@ -5,6 +5,7 @@ import { api } from '@/lib/axios'
 import {cn} from "@/lib/utils.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
+import {COMMUNITY_CATEGORIES} from "@/constants/category.ts";
 import {Heart, MessageSquareText, PlusIcon} from "lucide-react";
 import {
     Select,
@@ -18,6 +19,7 @@ import {
 
 const blogPosts = [
     {
+        id: 1,
         category: "Technology",
         title: "A beginner",
         description:
@@ -28,6 +30,7 @@ const blogPosts = [
             "https://cdn.pixabay.com/photo/2021/08/27/18/50/water-6579313_1280.jpg",
     },
     {
+        id: 2,
         category: "Business",
         title: "Understanding React Server Components",
         description:
@@ -38,6 +41,7 @@ const blogPosts = [
             "https://cdn.pixabay.com/photo/2020/02/13/06/49/seascape-4844697_1280.jpg",
     },
     {
+        id: 3,
         category: "Finance",
         title: "10 Useful Shadcn UI Components You Should Know",
         description:
@@ -48,6 +52,7 @@ const blogPosts = [
             "https://cdn.pixabay.com/photo/2021/08/13/12/51/sea-6543041_1280.jpg",
     },
     {
+        id: 4,
         category: "Health",
         title: "Building a Personal Blog with Next.js",
         description:
@@ -58,6 +63,7 @@ const blogPosts = [
             "https://cdn.pixabay.com/photo/2017/06/22/20/24/dewdrops-2432391_1280.jpg",
     },
     {
+        id: 5,
         category: "Lifestyle",
         title: "The Complete Guide to TypeScript for Beginners",
         description:
@@ -68,6 +74,7 @@ const blogPosts = [
             "https://cdn.pixabay.com/photo/2013/07/21/13/00/rose-165819_1280.jpg",
     },
     {
+        id: 6,
         category: "Politics",
         title: "Optimizing Web Performance with Next.js",
         description:
@@ -78,6 +85,7 @@ const blogPosts = [
             "https://cdn.pixabay.com/photo/2021/08/12/10/38/mountains-6540497_1280.jpg",
     },
     {
+        id: 7,
         category: "Science",
         title: "Deploying Full-Stack Apps on Vercel",
         description:
@@ -88,6 +96,7 @@ const blogPosts = [
             "https://cdn.pixabay.com/photo/2016/03/27/18/54/technology-1283624_1280.jpg",
     },
     {
+        id: 8,
         category: "Sports",
         title: "Getting Started with Modern Web Development",
         description:
@@ -97,15 +106,6 @@ const blogPosts = [
         image:
             "https://cdn.pixabay.com/photo/2017/08/30/12/45/girl-2696947_1280.jpg",
     },
-];
-
-const categories = [
-    {key: "all", label: "전체"},
-    {key: "damage", label: "⚠️ 피해 사례"},
-    {key: "fraud", label: "🚨 사기 의심"},
-    {key: "law", label: "🧑‍⚖️ 대응/법률"},
-    {key: "region", label: "🔍 지역 정보"},
-    {key: "question", label: "❓ 질문"},
 ];
 
 export default function CommunityMainPage() {
@@ -148,29 +148,18 @@ export default function CommunityMainPage() {
         })()
     }, [sort, category, query])
 
-    const handleSortChange = (newSort: string) => {
-        setSearchParams({
-            sort: newSort,
-            category,
-            ...(query && {query})
+    const updateParams = (patch: Record<string, string | undefined>) => {
+        const next = new URLSearchParams(searchParams)
+        Object.entries(patch).forEach(([k, v]) => {
+            if (v == null || v === '') next.delete(k)
+            else next.set(k, v)
         })
+        setSearchParams(next)
     }
 
-    const handleCategoryChange = (newCategory: string) => {
-        setSearchParams({
-            sort,
-            category: newCategory,
-            ...(query && {query})
-        })
-    }
-
-    const handleSearch = () => {
-        setSearchParams({
-            sort,
-            category,
-            ...(keyword.trim() && {query: keyword.trim()})
-        })
-    }
+    const handleSortChange = (sort: string) => updateParams({ sort })
+    const handleCategoryChange = (category: string) => updateParams({ category })
+    const handleQueryChange = () => updateParams({ query: keyword.trim() || undefined })
 
     return (
         <>
@@ -179,7 +168,7 @@ export default function CommunityMainPage() {
                 value={keyword}
                 onChange={setKeyword}
                 onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSearch()
+                    if (e.key === 'Enter') handleQueryChange()
                 }}
                 isClearable={true}
             />
@@ -200,7 +189,7 @@ export default function CommunityMainPage() {
                     </SelectContent>
                 </Select>
                 <div className="flex gap-1 overflow-x-scroll whitespace-nowrap no-scrollbar">
-                    {categories.map((cat) => (
+                    {COMMUNITY_CATEGORIES.map((cat) => (
                         <Button
                             key={cat.key}
                             className={cn(
@@ -218,8 +207,8 @@ export default function CommunityMainPage() {
 
             <div className="flex flex-col gap-4 divide-y">
                 {blogPosts.map((post) => (
-                    <Link to={`/community/${post.title}`}>
-                        <div className="flex gap-4 pb-4" key={post.title}>
+                    <Link key={post.id} to={`/community/${post.id}`}>
+                        <div className="flex gap-4 pb-4">
                             <div className="flex flex-1 flex-col gap-2">
                                 <Badge variant="secondary" className="rounded-sm text-gray-700">
                                     {post.category}

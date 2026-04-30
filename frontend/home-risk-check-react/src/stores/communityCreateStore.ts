@@ -1,4 +1,3 @@
-// stores/communityWriteStore.ts
 import { create } from 'zustand'
 
 interface Poll {
@@ -15,16 +14,16 @@ interface CommunityCreateStore {
     content: string
     images: File[]
     poll: Poll | null
-    placeLat: string
-    placeLng: string
+    placeLat: number | null
+    placeLng: number | null
 
     setCategory: (category: string) => void
     setTitle: (title: string) => void
     setContent: (content: string) => void
     setImages: (images: File[]) => void
     setPoll: (poll: Poll | null) => void
-    setPlaceLat: (placeLat: string) => void
-    setPlaceLng: (placeLng: string) => void
+    setPlaceLat: (placeLat: number | null) => void
+    setPlaceLng: (placeLng: number | null) => void
 
     reset: () => void
 }
@@ -35,8 +34,8 @@ export const communityCreateStore = create<CommunityCreateStore>((set) => ({
     content: '',
     images: [],
     poll: null,
-    placeLat: '',
-    placeLng: '',
+    placeLat: null,
+    placeLng: null,
     setCategory: (category) => set({ category }),
     setTitle: (title) => set({ title }),
     setContent: (content) => set({ content }),
@@ -44,5 +43,5 @@ export const communityCreateStore = create<CommunityCreateStore>((set) => ({
     setPoll: (poll) => set({ poll }),
     setPlaceLat: (placeLat) => set({ placeLat }),
     setPlaceLng: (placeLng) => set({ placeLng }),
-    reset: () => set({ title: '', content: '', category: '', images: [], poll: null, placeLat: '', placeLng: '' }),
+    reset: () => set({ title: '', content: '', category: '', images: [], poll: null, placeLat: null, placeLng:  null }),
 }))

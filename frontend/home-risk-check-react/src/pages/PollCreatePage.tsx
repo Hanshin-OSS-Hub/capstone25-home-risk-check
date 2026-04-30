@@ -1,7 +1,7 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
-import {communityCreateStore} from "@/stores/communityCreateStore.tsx";
+import {communityCreateStore} from "@/stores/communityCreateStore.ts";
 import {useEffect, useRef, useState} from "react";
 import {useNavigate, useLocation } from "react-router-dom";
 

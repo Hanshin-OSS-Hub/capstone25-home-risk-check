@@ -5,7 +5,7 @@ import {Card, CardTitle, CardContent} from '@/components/ui/card'
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useLocation} from 'react-router-dom'
 import axios from 'axios'
-import { api } from '@/lib/axios'
+import {analysisApi} from '@/features/analysis/api'
 
 export default function AnalysisPage() {
     const [address, setAddress] = useState('')
@@ -63,28 +63,14 @@ export default function AnalysisPage() {
         abortControllerRef.current = new AbortController()
         setIsLoading(true)
 
-        const formData = new FormData()
-
-        formData.append("address", address)
-        formData.append("detailAddress", detailAddress)
-        formData.append("deposit", deposit)
-
-        registryFiles.forEach((file) => {
-            formData.append("registryFiles", file)
-        })
-
-        buildingFiles.forEach((file) => {
-            formData.append("buildingFiles", file)
-        })
-
         try {
-            const res = await api.post("/api/analyze", formData, {
-                headers: {"Content-Type": "multipart/form-data"},
-                signal: abortControllerRef.current.signal,
-            })
+            const data = await analysisApi.analyze(
+                { address, detailAddress, deposit, registryFiles, buildingFiles },
+                abortControllerRef.current.signal,
+            )
             // sessionStorage에 백업 저장
-            sessionStorage.setItem("analysisResult", JSON.stringify(res.data))
-            navigate("/analysis/result", {state: {result: res.data}})
+            sessionStorage.setItem("analysisResult", JSON.stringify(data))
+            navigate("/analysis-result", { state: { result: data } })
         } catch (err) {
             if (axios.isCancel(err)) return
         } finally {

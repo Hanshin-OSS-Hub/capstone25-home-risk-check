@@ -1,4 +1,4 @@
-type CommunityCategoryKey = 'all' | 'damage' | 'fraud' | 'law' | 'region' | 'question'
+export type CommunityCategoryKey = 'all' | 'damage' | 'fraud' | 'law' | 'region' | 'question'
 export const COMMUNITY_CATEGORIES: { key: CommunityCategoryKey; label: string }[] = [
     { key: 'all',      label: '전체' },
     { key: 'damage',   label: '⚠️ 피해 사례' },

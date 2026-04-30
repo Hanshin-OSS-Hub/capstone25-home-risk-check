@@ -3,6 +3,7 @@ import InputCode from '@/components/InputCode'
 import {useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {signupStore} from '@/stores/signupStore.ts'
+// import {authApi} from '@/features/auth/api' // 백엔드 연동 시 활성화
 
 export default function EmailVerifyPage() {
     const navigate = useNavigate()
@@ -17,7 +18,7 @@ export default function EmailVerifyPage() {
         }
 
         try {
-            // await axios.post('/api/auth/verify-code', { email, code })
+            // await authApi.verifyEmailCode({ email, code })
             setIsEmailVerified(true)
             navigate('/signup')
         } catch {
@@ -27,7 +28,7 @@ export default function EmailVerifyPage() {
 
     const handleResend = async () => {
         try {
-            // await axios.post('/api/auth/send-code', { email })
+            // await authApi.sendEmailCode(email)
             setCode('')
             setCodeError('')
         } catch {

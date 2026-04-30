@@ -6,8 +6,6 @@ export default function PrivateLayout() {
     const { user, isLoading } = useAuth()
     const location = useLocation()
 
-    console.log('isLoading:', isLoading, 'user:', user)
-
     if (isLoading) return (
         <div className="flex items-center justify-center h-screen">
             <span className="text-gray-400">로딩 중...</span>

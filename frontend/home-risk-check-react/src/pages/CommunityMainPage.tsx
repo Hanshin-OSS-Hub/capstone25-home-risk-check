@@ -1,7 +1,7 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import {useEffect, useState} from 'react'
 import {useSearchParams, Link} from 'react-router-dom'
-import { api } from '@/lib/axios'
+import { communityApi } from '@/features/community/api'
 import {cn} from "@/lib/utils.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
@@ -110,7 +110,8 @@ const blogPosts = [
 
 export default function CommunityMainPage() {
     const [searchParams, setSearchParams] = useSearchParams()
-    const [posts, setPosts] = useState([])
+    // TODO(3단계): usePosts(useQuery) 로 교체. 현재는 setter 만 사용해 fetch 보존
+    const [, setPosts] = useState<unknown[]>([])
     const [keyword, setKeyword] = useState('')
 
     const sort = searchParams.get('sort') || 'latest'
@@ -138,10 +139,8 @@ export default function CommunityMainPage() {
     useEffect(() => {
         (async () => {
             try {
-                const res = await api.get('/api/posts', {
-                    params: {sort, category, query}
-                })
-                setPosts(res.data)
+                const data = await communityApi.getPosts({ sort, category, query })
+                setPosts(data)
             } catch (e) {
                 console.error(e)
             }

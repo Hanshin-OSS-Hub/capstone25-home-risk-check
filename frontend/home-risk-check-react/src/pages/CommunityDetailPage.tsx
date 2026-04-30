@@ -6,10 +6,9 @@ import {
 } from "@/components/ui/input-group";
 import {useEffect, useState, useRef} from 'react'
 import {useParams} from 'react-router-dom'
-import axios from 'axios'
+import {communityApi} from '@/features/community/api'
 import {Avatar, AvatarImage} from "@/components/ui/avatar.tsx";
 import {Heart, MessageSquareText} from "lucide-react";
-import {mockComments} from "@/__mocks__/mockComments.ts";
 import type {Comment, CommentTree} from "@/types/comment.ts";
 
 function buildCommentTree(flat: Comment[]): CommentTree[] {
@@ -66,7 +65,7 @@ function CommentItem({ comment, isReply = false, onReplyClick }: { comment: any,
 }
 
 export default function CommunityDetailPage() {
-    const { postId } = useParams()
+    const { postId } = useParams<{ postId: string }>()
     const [comments, setComments] = useState<any[]>([])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const replyRef = useRef<HTMLTextAreaElement>(null)
@@ -81,11 +80,10 @@ export default function CommunityDetailPage() {
     }, [openReplyId])
 
     useEffect(() => {
-        if (import.meta.env.VITE_USE_MOCK === 'true') {
-            setComments(buildCommentTree(mockComments))
-        }
-        axios.get(`/api/posts/${postId}/comments`)
-            .then(res => setComments(buildCommentTree(res.data)))
+        if (!postId) return
+        communityApi.getComments(postId)
+            .then(data => setComments(buildCommentTree(data)))
+            .catch(err => console.error(err))
     }, [postId])
 
     return (

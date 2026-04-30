@@ -8,6 +8,7 @@ import {useMemo, useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useNavigate} from 'react-router-dom'
 import {signupStore} from '@/stores/signupStore.ts'
+// import {authApi} from '@/features/auth/api' // 백엔드 연동 시 활성화
 import axios from 'axios'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -62,7 +63,7 @@ export default function SignupPage() {
             }))
             return
         }
-        // await axios.post('/api/auth/send-code', { email })
+        // await authApi.sendEmailCode(email)
         navigate('/email-verify')
     }
 
@@ -76,9 +77,9 @@ export default function SignupPage() {
         }
 
         try {
-            // await axios.get(`/api/auth/check-nickname, {nickname}`)
+            // await authApi.checkNickname(nickname)
             setIsNicknameChecked(true)
-        } catch (err){
+        } catch {
             setFormErrors(prev => ({
                 ...prev,
                 nickname: '이미 사용중인 닉네임이에요'
@@ -111,7 +112,7 @@ export default function SignupPage() {
         }
 
         try {
-            // await axios.post('/api/auth/signup', { nickname, email, password })
+            // await authApi.signup({ nickname, email, password })
             reset()
             navigate('/login')
         } catch (err) {

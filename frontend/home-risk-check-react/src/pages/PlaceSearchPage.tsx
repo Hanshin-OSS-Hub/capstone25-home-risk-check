@@ -4,7 +4,7 @@ import {useLocation, useNavigate} from "react-router-dom";
 import {communityCreateStore} from "@/stores/communityCreateStore.ts";
 import mapPinMarker from '@/assets/mapPinMarker.png'
 
-export default function placeSearchPage() {
+export default function PlaceSearchPage() {
     const [address, setAddress] = useState('')
     const [placeResponse, setPlaceResponse] = useState<any[]>([])
     const {setPlaceLat, setPlaceLng} = communityCreateStore()

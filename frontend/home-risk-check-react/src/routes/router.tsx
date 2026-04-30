@@ -1,48 +1,43 @@
+import type { ComponentType } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import RootLayout from '@/components/layouts/RootLayout'
 import AuthLayout from '@/components/layouts/AuthLayout'
-// import { HomePage } from '@/pages/HomePage'
-import AnalysisPage from '@/pages/AnalysisPage'
-import AddressSearchPage from '@/pages/AddressSearchPage'
-import AnalysisResultPage from '@/pages/AnalysisResultPage'
-import LoginPage from '@/pages/LoginPage'
-import SignupPage from '@/pages/SignupPage'
-import EmailVerifyPage from '@/pages/EmailVerifyPage'
-import CommunityMainPage from '@/pages/CommunityMainPage'
-import CommunityDetailPage from '@/pages/CommunityDetailPage'
-import CommunityCreatePage from '@/pages/CommunityCreatePage'
-import PlaceSearchPage from '@/pages/PlaceSearchPage'
-import PollCreatePage from '@/pages/PollCreatePage'
-import PrivateLayout from '@/components/layouts/PrivateLayout'
+// PrivateLayout: 의도적으로 비활성화 상태(인증 도입 전)
+// import PrivateLayout from '@/components/layouts/PrivateLayout'
+
+const lazyPage = (factory: () => Promise<{ default: ComponentType }>) => async () => {
+    const { default: Component } = await factory()
+    return { Component }
+}
 
 export const router = createBrowserRouter([
     {
         element: <RootLayout />,
         children: [
             // 로그인 불필요
-            { path: '/address-search', element: <AddressSearchPage /> },
-            { path: '/analysis-result', element: <AnalysisResultPage /> },
-            { path: '/community', element: <CommunityMainPage /> },
-            { path: '/community/:id', element: <CommunityDetailPage /> },
+            { path: '/address-search', lazy: lazyPage(() => import('@/pages/AddressSearchPage')) },
+            { path: '/analysis-result', lazy: lazyPage(() => import('@/pages/AnalysisResultPage')) },
+            { path: '/community', lazy: lazyPage(() => import('@/pages/CommunityMainPage')) },
+            { path: '/community/:postId', lazy: lazyPage(() => import('@/pages/CommunityDetailPage')) },
 
-            // 로그인 필요
+            // 로그인 필요 (PrivateLayout은 의도적 비활성화)
             {
-                // element: <PrivateLayout />,
+                // element: <PrivateLayout/>
                 children: [
-                    { path: '/analysis', element: <AnalysisPage /> },
-                    { path: '/community/new', element: <CommunityCreatePage /> },
-                    { path: '/place-search', element: <PlaceSearchPage /> },
-                    { path: '/community/poll/new', element: <PollCreatePage /> },
-                ]
-            }
+                    { path: '/analysis', lazy: lazyPage(() => import('@/pages/AnalysisPage')) },
+                    { path: '/community/new', lazy: lazyPage(() => import('@/pages/CommunityCreatePage')) },
+                    { path: '/place-search', lazy: lazyPage(() => import('@/pages/PlaceSearchPage')) },
+                    { path: '/community/poll/new', lazy: lazyPage(() => import('@/pages/PollCreatePage')) },
+                ],
+            },
         ],
     },
     {
         element: <AuthLayout />,
         children: [
-            { path: '/login', element: <LoginPage /> },
-            { path: '/signup', element: <SignupPage /> },
-            { path: '/email-verify', element: <EmailVerifyPage/>}
+            { path: '/login', lazy: lazyPage(() => import('@/pages/LoginPage')) },
+            { path: '/signup', lazy: lazyPage(() => import('@/pages/SignupPage')) },
+            { path: '/email-verify', lazy: lazyPage(() => import('@/pages/EmailVerifyPage')) },
         ],
-    }
+    },
 ])

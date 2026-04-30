@@ -1,9 +1,9 @@
 import {Button} from '@/components/ui/button'
 import InputBasic from '@/components/InputBasic.tsx'
 import {useState} from 'react'
-import {Link} from 'react-router-dom'
-import {useNavigate} from 'react-router-dom'
-import {api} from '@/lib/axios'
+import {Link, useNavigate} from 'react-router-dom'
+import {authApi} from '@/features/auth/api'
+import {toast} from 'sonner'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -12,18 +12,11 @@ export default function LoginPage() {
 
     const handleLogin = async () => {
         try {
-            const res = await api.post("/api/login", {
-                email,
-                password,
-            })
-
-            const token = res.data.accessToken
-
-            localStorage.setItem("accessToken", token)
-
-            navigate("/")
-        } catch (err) {
-            alert(err)
+            // 토큰은 httpOnly 쿠키로 서버에서 내려옴 — 클라이언트는 저장하지 않음
+            await authApi.login({ email, password })
+            navigate("/", { replace: true })
+        } catch {
+            toast.error("로그인에 실패했습니다. 다시 시도해주세요.")
         }
     }
 

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useInfiniteQuery } from "@tanstack/react-query"
-import axios from "axios"
 import InputBasic from "@/components/InputBasic.tsx"
-import { Toaster } from "@/components/ui/sonner"
+import { addressApi } from "@/features/address/api"
+import type { JusoItem } from "@/features/address/types"
 import { toast } from "sonner"
 
 export default function AddressSearchPage() {
@@ -12,7 +12,6 @@ export default function AddressSearchPage() {
     const navigate = useNavigate()
     const location = useLocation()
     const observerRef = useRef<HTMLDivElement | null>(null)
-    const API_KEY = import.meta.env.VITE_JUSO_API_KEY
 
     useEffect(() => {
         const delay = setTimeout(() => {
@@ -51,30 +50,9 @@ export default function AddressSearchPage() {
     }
 
     const fetchAddress = async ({ pageParam = 1 }) => {
-        //스프링 프록시 예정
-        const res = await axios.get("https://www.juso.go.kr/addrlink/addrLinkApi.do",
-            {
-                params: {
-                    confmKey: API_KEY,
-                    currentPage: pageParam,
-                    countPerPage: 20,
-                    keyword: debouncedKeyword,
-                    resultType: "json",
-                },
-            }
-        )
-
-        const common = res.data.results.common
-
-        if (common.errorCode !== "0") {
-            toast.error(`${common.errorMessage}`)
-        }
-
-        return {
-            list: res.data.results.juso || [],
-            total: Number(common.totalCount),
-            page: pageParam,
-        }
+        const data = await addressApi.searchJuso({ keyword: debouncedKeyword, page: pageParam })
+        if (data.errorMessage) toast.error(data.errorMessage)
+        return data
     }
 
     const {
@@ -119,11 +97,12 @@ export default function AddressSearchPage() {
         return () => observer.disconnect()
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-    const handleSelectAddress = (item: any) => {
-        const from = location.state?.from
+    const handleSelectAddress = (item: JusoItem) => {
+        const from = (location.state as { from?: string } | null)?.from
+        if (!from) return
         navigate(from, {
             state: { address: item.roadAddrPart1, buildingName: item.bdNm },
-            replace:true
+            replace: true,
         })
     }
 
@@ -195,8 +174,6 @@ export default function AddressSearchPage() {
 
             {/* 무한스크롤 트리거 */}
             <div ref={observerRef} className="h-10" />
-
-            <Toaster position="top-center" />
         </>
     )
 }

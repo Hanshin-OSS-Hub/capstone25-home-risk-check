@@ -1,12 +1,5 @@
 import { create } from 'zustand'
-
-interface Poll {
-    options: {
-        id: string;
-        text: string;
-    }[];
-    multipleChoice: boolean;
-}
+import type { Poll } from '@/features/community/types'
 
 interface CommunityCreateStore {
     category: string

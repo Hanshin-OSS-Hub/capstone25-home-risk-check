@@ -1,5 +1,3 @@
-"use client";
-
 import {Link} from "react-router-dom";
 import type { ComponentProps } from "react";
 import {
@@ -25,7 +23,7 @@ export const NavMenu = (props: ComponentProps<typeof NavigationMenu>) => (
             </NavigationMenuItem>
             <NavigationMenuItem>
                 <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                    <Link to="community">커뮤니티</Link>
+                    <Link to="/community">커뮤니티</Link>
                 </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>

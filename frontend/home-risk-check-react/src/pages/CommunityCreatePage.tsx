@@ -15,7 +15,6 @@ import {
     FileUploadList,
     FileUploadTrigger,
 } from "@/components/ui/file-upload";
-import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import InputBasic from "@/components/InputBasic.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
@@ -23,6 +22,7 @@ import {Button} from "@/components/ui/button.tsx";
 import {useEffect, useRef} from "react";
 import {useNavigate, useBlocker } from "react-router-dom";
 import {communityCreateStore} from "@/stores/communityCreateStore.ts";
+// import {communityApi} from '@/features/community/api' // 백엔드 연동 시 활성화
 import {Image, MapPin, X, Vote} from "lucide-react";
 import mapPinMarker from '@/assets/mapPinMarker.png'
 import {COMMUNITY_CATEGORIES} from "@/constants/category.ts";
@@ -80,34 +80,16 @@ export default function CommunityCreatePage() {
     };
 
     const handleSubmit = async () => {
-        const formData = new FormData();
-        const postData = {
-            category,
-            title,
-            content,
-            placeLat,
-            placeLng,
-            poll
-        };
-
-        formData.append(
-            "post",
-            new Blob([JSON.stringify(postData)], {
-                type: "application/json",
-            })
-        );
-
-        images.forEach((image) => {
-            formData.append("images", image);
-        });
-
         try {
-            // await axios.post("/api/posts", formData);
+            // await communityApi.createPost(
+            //     { category, title, content, placeLat, placeLng, poll },
+            //     images,
+            // )
             reset()
         } catch (e) {
-            console.error(e);
+            console.error(e)
         }
-    };
+    }
 
     const isDirty =
         category !== "" ||
@@ -316,14 +298,6 @@ export default function CommunityCreatePage() {
                     <Button className="rounded-xl cursor-pointer" onClick={handleSubmit}>글쓰기</Button>
                 </div>
             </div>
-            <Toaster toastOptions={{
-                classNames: {
-                    toast: '!flex',
-                    content: '!flex-1',
-                    actionButton: '!ml-0',
-                    cancelButton: '!ml-0',
-                },
-            }}/>
         </>
     )
 }

@@ -1,7 +1,7 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import {useEffect, useState} from 'react'
 import {useSearchParams, Link} from 'react-router-dom'
-import axios from 'axios'
+import { api } from '@/lib/axios'
 import {cn} from "@/lib/utils.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
@@ -138,7 +138,7 @@ export default function CommunityMainPage() {
     useEffect(() => {
         (async () => {
             try {
-                const res = await axios.get('/api/posts', {
+                const res = await api.get('/api/posts', {
                     params: {sort, category, query}
                 })
                 setPosts(res.data)

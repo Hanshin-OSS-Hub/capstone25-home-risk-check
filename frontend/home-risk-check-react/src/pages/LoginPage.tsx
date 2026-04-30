@@ -3,7 +3,7 @@ import InputBasic from '@/components/InputBasic.tsx'
 import {useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useNavigate} from 'react-router-dom'
-import axios from 'axios'
+import {api} from '@/lib/axios'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -12,7 +12,7 @@ export default function LoginPage() {
 
     const handleLogin = async () => {
         try {
-            const res = await axios.post("/api/login", {
+            const res = await api.post("/api/login", {
                 email,
                 password,
             })

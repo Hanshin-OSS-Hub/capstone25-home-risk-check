@@ -5,6 +5,7 @@ import {Card, CardTitle, CardContent} from '@/components/ui/card'
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useLocation} from 'react-router-dom'
 import axios from 'axios'
+import { api } from '@/lib/axios'
 
 export default function AnalysisPage() {
     const [address, setAddress] = useState('')
@@ -77,7 +78,7 @@ export default function AnalysisPage() {
         })
 
         try {
-            const res = await axios.post("/api/analyze", formData, {
+            const res = await api.post("/api/analyze", formData, {
                 headers: {"Content-Type": "multipart/form-data"},
                 signal: abortControllerRef.current.signal,
             })

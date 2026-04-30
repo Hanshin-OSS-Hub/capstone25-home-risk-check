@@ -13,20 +13,28 @@ import CommunityDetailPage from '@/pages/CommunityDetailPage'
 import CommunityCreatePage from '@/pages/CommunityCreatePage'
 import PlaceSearchPage from '@/pages/PlaceSearchPage'
 import PollCreatePage from '@/pages/PollCreatePage'
+import PrivateLayout from '@/components/layouts/PrivateLayout'
 
 export const router = createBrowserRouter([
     {
         element: <RootLayout />,
         children: [
-            // { path: '/', element: <HomePage /> },
-            { path: '/analysis', element: <AnalysisPage /> },
+            // 로그인 불필요
             { path: '/address-search', element: <AddressSearchPage /> },
             { path: '/analysis-result', element: <AnalysisResultPage /> },
             { path: '/community', element: <CommunityMainPage /> },
             { path: '/community/:id', element: <CommunityDetailPage /> },
-            { path: '/community/new', element: <CommunityCreatePage/>},
-            { path: '/place-search', element: <PlaceSearchPage /> },
-            { path: '/community/poll/new', element: <PollCreatePage /> }
+
+            // 로그인 필요
+            {
+                element: <PrivateLayout />,
+                children: [
+                    { path: '/analysis', element: <AnalysisPage /> },
+                    { path: '/community/new', element: <CommunityCreatePage /> },
+                    { path: '/place-search', element: <PlaceSearchPage /> },
+                    { path: '/community/poll/new', element: <PollCreatePage /> },
+                ]
+            }
         ],
     },
     {

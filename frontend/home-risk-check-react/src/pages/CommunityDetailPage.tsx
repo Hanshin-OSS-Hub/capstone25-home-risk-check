@@ -6,8 +6,6 @@ import {
 } from "@/components/ui/input-group";
 import {useEffect, useState, useRef} from 'react'
 import {useParams} from 'react-router-dom'
-import {Textarea} from "@/components/ui/textarea.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import axios from 'axios'
 import {Avatar, AvatarImage} from "@/components/ui/avatar.tsx";
 import {Heart, MessageSquareText} from "lucide-react";

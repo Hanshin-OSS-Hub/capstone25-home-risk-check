@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useInfiniteQuery } from "@tanstack/react-query"
-import axios from "axios"
+import {api} from "@/lib/axios"
 import InputBasic from "@/components/InputBasic.tsx"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
@@ -52,7 +52,7 @@ export default function AddressSearchPage() {
 
     const fetchAddress = async ({ pageParam = 1 }) => {
         //스프링 프록시 예정
-        const res = await axios.get("https://www.juso.go.kr/addrlink/addrLinkApi.do",
+        const res = await api.get("https://www.juso.go.kr/addrlink/addrLinkApi.do",
             {
                 params: {
                     confmKey: API_KEY,

@@ -27,5 +27,11 @@ export const signupStore = create<SignupStore>((set) => ({
     setPassword: (password) => set({password}),
     setIsNicknameChecked: (v) => set({isNicknameChecked: v}),
     setIsEmailVerified: (v) => set({ isEmailVerified: v }),
-    reset: () => set({ email: '', isEmailVerified: false }),
+    reset: () => set({
+        nickname: '',
+        email: '',
+        password: '',
+        isNicknameChecked: false,
+        isEmailVerified: false,
+    }),
 }))

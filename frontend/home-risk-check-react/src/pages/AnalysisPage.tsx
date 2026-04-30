@@ -5,7 +5,7 @@ import {Card, CardTitle, CardContent} from '@/components/ui/card'
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useLocation} from 'react-router-dom'
 import axios from 'axios'
-import {analysisApi} from '@/features/analysis/api'
+import {useAnalyze} from '@/features/analysis/hooks/useAnalyze'
 
 export default function AnalysisPage() {
     const [address, setAddress] = useState('')
@@ -13,10 +13,10 @@ export default function AnalysisPage() {
     const [deposit, setDeposit] = useState('')
     const [registryFiles, setRegistryFiles] = useState<File[]>([]); // 등기부등본
     const [buildingFiles, setBuildingFiles] = useState<File[]>([]); // 건축물대장
-    const [isLoading, setIsLoading] = useState(false)
     const navigate = useNavigate()
     const location = useLocation()
     const abortControllerRef = useRef<AbortController | null>(null)
+    const analyze = useAnalyze()
 
     useEffect(() => {
         if (location.state?.address) {
@@ -61,20 +61,16 @@ export default function AnalysisPage() {
 
     const handleAnalysisRequest = async () => {
         abortControllerRef.current = new AbortController()
-        setIsLoading(true)
-
         try {
-            const data = await analysisApi.analyze(
-                { address, detailAddress, deposit, registryFiles, buildingFiles },
-                abortControllerRef.current.signal,
-            )
+            const data = await analyze.mutateAsync({
+                address, detailAddress, deposit, registryFiles, buildingFiles,
+                signal: abortControllerRef.current.signal,
+            })
             // sessionStorage에 백업 저장
             sessionStorage.setItem("analysisResult", JSON.stringify(data))
             navigate("/analysis-result", { state: { result: data } })
         } catch (err) {
             if (axios.isCancel(err)) return
-        } finally {
-            setIsLoading(false)
         }
     }
 
@@ -129,10 +125,10 @@ export default function AnalysisPage() {
                        files={buildingFiles} onValueChange={setBuildingFiles}/>
             <Button
                 onClick={handleAnalysisRequest}
-                disabled={isLoading}
+                disabled={analyze.isPending}
                 className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {isLoading ? "분석 중..." : "분석하기"}
+                {analyze.isPending ? "분석 중..." : "분석하기"}
             </Button>
         </>
     )

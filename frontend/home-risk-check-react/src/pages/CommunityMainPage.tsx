@@ -1,7 +1,7 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import {useEffect, useState} from 'react'
 import {useSearchParams, Link} from 'react-router-dom'
-import { communityApi } from '@/features/community/api'
+import { usePosts } from '@/features/community/hooks/usePosts'
 import {cn} from "@/lib/utils.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
@@ -15,137 +15,27 @@ import {
     SelectLabel,
     SelectTrigger,
     SelectValue
-} from '@/components/ui/select'
-
-const blogPosts = [
-    {
-        id: 1,
-        category: "Technology",
-        title: "A beginner",
-        description:
-            "동해물과 백두산이 마르고 닳도록 하나님이 보우하사 우리나라 만세. 무궁화 삼천리 화려 강산 대한 사람 대한으로 길이 보전하세.",
-        readTime: "5 min read",
-        date: "Nov 20, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2021/08/27/18/50/water-6579313_1280.jpg",
-    },
-    {
-        id: 2,
-        category: "Business",
-        title: "Understanding React Server Components",
-        description:
-            "Lorem ipsum dolor sit, amet consectetur adipisicing elit.",
-        readTime: "8 min read",
-        date: "Nov 18, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2020/02/13/06/49/seascape-4844697_1280.jpg",
-    },
-    {
-        id: 3,
-        category: "Finance",
-        title: "10 Useful Shadcn UI Components You Should Know",
-        description:
-            "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa contur minus dicta accusantium quos, ratione suscipit id adipisci voluptatibus. Nulla sint repudiandae fugiat tenetur dolores.",
-        readTime: "6 min read",
-        date: "Nov 15, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2021/08/13/12/51/sea-6543041_1280.jpg",
-    },
-    {
-        id: 4,
-        category: "Health",
-        title: "Building a Personal Blog with Next.js",
-        description:
-            "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa consequatur minus dicta accusantium quos, ratione suscipit id adipisci voluptatibus. Nulla sint repudiandae fugiat tenetur dolores.",
-        readTime: "10 min read",
-        date: "Nov 12, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2017/06/22/20/24/dewdrops-2432391_1280.jpg",
-    },
-    {
-        id: 5,
-        category: "Lifestyle",
-        title: "The Complete Guide to TypeScript for Beginners",
-        description:
-            "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa consequatur minus dicta accusantium quos, ratione suscipit id adipisci voluptatibus. Nulla sint repudiandae fugiat tenetur dolores.",
-        readTime: "12 min read",
-        date: "Nov 10, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2013/07/21/13/00/rose-165819_1280.jpg",
-    },
-    {
-        id: 6,
-        category: "Politics",
-        title: "Optimizing Web Performance with Next.js",
-        description:
-            "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa consequatur minus dicta accusantium quos, ratione suscipit id adipisci voluptatibus. Nulla sint repudiandae fugiat tenetur dolores.",
-        readTime: "7 min read",
-        date: "Nov 8, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2021/08/12/10/38/mountains-6540497_1280.jpg",
-    },
-    {
-        id: 7,
-        category: "Science",
-        title: "Deploying Full-Stack Apps on Vercel",
-        description:
-            "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa consequatur minus dicta accusantium quos, ratione suscipit id adipisci voluptatibus. Nulla sint repudiandae fugiat tenetur dolores.",
-        readTime: "9 min read",
-        date: "Nov 5, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2016/03/27/18/54/technology-1283624_1280.jpg",
-    },
-    {
-        id: 8,
-        category: "Sports",
-        title: "Getting Started with Modern Web Development",
-        description:
-            "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ipsa consequatur minus dicta accusantium quos, ratione suscipit id adipisci voluptatibus. Nulla sint repudiandae fugiat tenetur dolores.",
-        readTime: "11 min read",
-        date: "Nov 2, 2024",
-        image:
-            "https://cdn.pixabay.com/photo/2017/08/30/12/45/girl-2696947_1280.jpg",
-    },
-];
+} from '@/components/ui/select';
 
 export default function CommunityMainPage() {
     const [searchParams, setSearchParams] = useSearchParams()
-    // TODO(3단계): usePosts(useQuery) 로 교체. 현재는 setter 만 사용해 fetch 보존
-    const [, setPosts] = useState<unknown[]>([])
     const [keyword, setKeyword] = useState('')
-
     const sort = searchParams.get('sort') || 'latest'
     const category = searchParams.get('category') || 'all'
     const query = searchParams.get('query') || ''
+    const [isTop, setIsTop] = useState(true)
 
-    const [isTop, setIsTop] = useState(true);
+    // 서버 상태 — 데이터 표시는 4단계에서 PostListItem 분리와 함께 mock blogPosts 대체 예정
+    const { data: blogPosts = [] } = usePosts({ sort, category, query })
 
     useEffect(() => {
         const handleScroll = () => {
-            if (window.scrollY > 100) {
-                setIsTop(false);
-            } else {
-                setIsTop(true);
-            }
-        };
-
-        window.addEventListener("scroll", handleScroll);
-
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, []);
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const data = await communityApi.getPosts({ sort, category, query })
-                setPosts(data)
-            } catch (e) {
-                console.error(e)
-            }
-        })()
-    }, [sort, category, query])
+            const next = window.scrollY <= 100
+            setIsTop(prev => (prev === next ? prev : next))
+        }
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
 
     const updateParams = (patch: Record<string, string | undefined>) => {
         const next = new URLSearchParams(searchParams)
@@ -216,7 +106,7 @@ export default function CommunityMainPage() {
                                     {post.title}
                                 </h3>
                                 <p className="line-clamp-1 text-ellipsis text-sm text-muted-foreground">
-                                    {post.description}
+                                    {post.content}
                                 </p>
                                 <div className="flex items-center gap-0.5 text-muted-foreground text-xs">
                                     바람이 분당구

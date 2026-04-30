@@ -3,23 +3,16 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import InputBasic from "@/components/InputBasic.tsx"
 import { addressApi } from "@/features/address/api"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { JusoItem } from "@/features/address/types"
 import { toast } from "sonner"
 
 export default function AddressSearchPage() {
     const [keyword, setKeyword] = useState("")
-    const [debouncedKeyword, setDebouncedKeyword] = useState("")
+    const debouncedKeyword = useDebouncedValue(keyword, 300)
     const navigate = useNavigate()
     const location = useLocation()
     const observerRef = useRef<HTMLDivElement | null>(null)
-
-    useEffect(() => {
-        const delay = setTimeout(() => {
-            setDebouncedKeyword(keyword)
-        }, 300)
-
-        return () => clearTimeout(delay)
-    }, [keyword])
 
     const validateKeyword = (value: string): string => {
         if (!value) return value

@@ -15,7 +15,6 @@ export interface Post {
     category: CommunityCategoryKey | string
     title: string
     content?: string
-    description?: string
     authorNickname?: string
     likes?: number
     commentCount?: number
@@ -38,4 +37,17 @@ export interface CreatePostBody {
     placeLat: number | null
     placeLng: number | null
     poll: Poll | null
+}
+
+export interface Comment {
+    commentId: number
+    parentCommentId: number | null
+    authorNickname: string
+    content: string
+    createdAt: string
+    likes: number
+}
+
+export interface CommentTree extends Comment {
+    children: CommentTree[]
 }

@@ -2,24 +2,24 @@ import {Button} from '@/components/ui/button'
 import InputBasic from '@/components/InputBasic.tsx'
 import {useState} from 'react'
 import {Link, useNavigate} from 'react-router-dom'
-import {authApi} from '@/features/auth/api'
+import {useLogin} from '@/features/auth/hooks/useLogin'
 import {toast} from 'sonner'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const navigate = useNavigate()
+    const login = useLogin()
 
     const handleLogin = async () => {
         try {
             // 토큰은 httpOnly 쿠키로 서버에서 내려옴 — 클라이언트는 저장하지 않음
-            await authApi.login({ email, password })
+            await login.mutateAsync({ email, password })
             navigate("/", { replace: true })
         } catch {
             toast.error("로그인에 실패했습니다. 다시 시도해주세요.")
         }
     }
-
 
     return (
         <div className="flex flex-col gap-6">

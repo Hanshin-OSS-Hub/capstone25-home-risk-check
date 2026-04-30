@@ -4,35 +4,15 @@ import {
     InputGroupButton,
     InputGroupTextarea,
 } from "@/components/ui/input-group";
-import {useEffect, useState, useRef} from 'react'
+import {useEffect, useMemo, useState, useRef} from 'react'
 import {useParams} from 'react-router-dom'
-import {communityApi} from '@/features/community/api'
+import {useComments} from '@/features/community/hooks/useComments'
+import {buildCommentTree} from '@/features/community/utils/buildCommentTree'
 import {Avatar, AvatarImage} from "@/components/ui/avatar.tsx";
 import {Heart, MessageSquareText} from "lucide-react";
-import type {Comment, CommentTree} from "@/types/comment.ts";
+import type {CommentTree} from '@/features/community/types.ts';
 
-function buildCommentTree(flat: Comment[]): CommentTree[] {
-    const map = new Map<number, CommentTree>()
-    const roots: CommentTree[] = []
-
-    flat.forEach((c) => {
-        map.set(c.commentId, { ...c, children: [] })
-    })
-
-    map.forEach((comment) => {
-        if (comment.parentCommentId === null) {
-            roots.push(comment)
-        } else {
-            const parent = map.get(comment.parentCommentId)
-            if (parent) {
-                parent.children.push(comment)
-            }
-        }
-    })
-    return roots
-}
-
-function CommentItem({ comment, isReply = false, onReplyClick }: { comment: any, isReply?: boolean, onReplyClick?: () => void }) {
+function CommentItem({ comment, isReply = false, onReplyClick }: { comment: CommentTree, isReply?: boolean, onReplyClick?: () => void }) {
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
@@ -66,7 +46,8 @@ function CommentItem({ comment, isReply = false, onReplyClick }: { comment: any,
 
 export default function CommunityDetailPage() {
     const { postId } = useParams<{ postId: string }>()
-    const [comments, setComments] = useState<any[]>([])
+    const { data: flatComments = [] } = useComments(postId)
+    const comments = useMemo(() => buildCommentTree(flatComments), [flatComments])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const replyRef = useRef<HTMLTextAreaElement>(null)
     const [openReplyId, setOpenReplyId] = useState<number | null>(null)
@@ -78,13 +59,6 @@ export default function CommunityDetailPage() {
     useEffect(() => {
         if (openReplyId !== null) replyRef.current?.focus()
     }, [openReplyId])
-
-    useEffect(() => {
-        if (!postId) return
-        communityApi.getComments(postId)
-            .then(data => setComments(buildCommentTree(data)))
-            .catch(err => console.error(err))
-    }, [postId])
 
     return (
         <>
@@ -140,7 +114,7 @@ export default function CommunityDetailPage() {
                                          setOpenReplyId(prev => (prev === comment.commentId ? null : comment.commentId));
                                      }}
                         />
-                        {comment.children.map((reply: any) => (
+                        {comment.children.map((reply: CommentTree) => (
                             <div key={reply.commentId} className="ml-10">
                                 <CommentItem comment={reply} isReply />
                             </div>

@@ -7,23 +7,24 @@ import {
     NavigationMenuList,
     navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { ROUTES } from "@/constants/routes";
 
 export const NavMenu = (props: ComponentProps<typeof NavigationMenu>) => (
     <NavigationMenu {...props}>
         <NavigationMenuList className="space-x-0 data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-start data-[orientation=vertical]:justify-start">
             <NavigationMenuItem>
                 <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                    <Link to="/">홈</Link>
+                    <Link to={ROUTES.home}>홈</Link>
                 </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
                 <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                    <Link to="/analysis">AI 분석</Link>
+                    <Link to={ROUTES.analysis}>AI 분석</Link>
                 </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
                 <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                    <Link to="/community">커뮤니티</Link>
+                    <Link to={ROUTES.community}>커뮤니티</Link>
                 </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>

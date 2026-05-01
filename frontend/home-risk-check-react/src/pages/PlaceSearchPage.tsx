@@ -1,7 +1,8 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import {useEffect, useRef, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
-import {communityCreateStore} from "@/stores/communityCreateStore.ts";
+import {communityCreateStore} from "@/features/community/stores/communityCreateStore";
+import {ROUTES} from "@/constants/routes";
 import mapPinMarker from '@/assets/mapPinMarker.png'
 
 export default function PlaceSearchPage() {
@@ -27,9 +28,9 @@ export default function PlaceSearchPage() {
     useEffect(() => {
         if (location.state?.address) {
             setAddress(location.state.address)
-            window.history.replaceState({}, '')
+            navigate(location.pathname, { replace: true, state: null })
         }
-    }, [location.state])
+    }, [location.state, location.pathname, navigate])
 
     // ① 지도 초기화 — 마운트 시 1회만
     useEffect(() => {
@@ -49,10 +50,9 @@ export default function PlaceSearchPage() {
             new kakao.maps.Point(40, 62),
         );
 
-
         const ps = new kakao.maps.services.Places(map);
         let markers: any[] = [];
-        let debounceTimer: any;
+        let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
         const clearMarkers = () => {
             markers.forEach(m => m.setMap(null));
@@ -91,13 +91,22 @@ export default function PlaceSearchPage() {
             }, { useMapBounds: true });
         };
 
-        kakao.maps.event.addListener(map, "dragend", () => {
+        const handleDragEnd = () => {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(searchPlaces, 300);
-        });
+        };
+        kakao.maps.event.addListener(map, "dragend", handleDragEnd);
 
         mapInstance.current = map;
-        setTimeout(searchPlaces, 300);
+        const initialTimer = setTimeout(searchPlaces, 300);
+
+        return () => {
+            kakao.maps.event.removeListener(map, "dragend", handleDragEnd);
+            clearTimeout(debounceTimer);
+            clearTimeout(initialTimer);
+            clearMarkers();
+            mapInstance.current = null;
+        };
     }, []); // ← 빈 배열, 마운트 1회
 
     // ② 주소 변경 시 지도 이동 — address 바뀔 때만
@@ -118,7 +127,7 @@ export default function PlaceSearchPage() {
     return (
         <>
             <div className="flex flex-col gap-2">
-                <div onClick={() => navigate('/address-search', {state: {from: location.pathname}, replace:true})}>
+                <div onClick={() => navigate(ROUTES.addressSearch, {state: {from: location.pathname}, replace:true})}>
                     <InputBasic
                         placeholder="장소명을 입력해주세요"
                         value={address}
@@ -151,7 +160,7 @@ export default function PlaceSearchPage() {
                             onClick={() => {
                                 setPlaceLat(item.y);
                                 setPlaceLng(item.x);
-                                navigate('/community/new');
+                                navigate(ROUTES.communityNew);
                             }}
                         >
                             <p className="font-medium text-sm">

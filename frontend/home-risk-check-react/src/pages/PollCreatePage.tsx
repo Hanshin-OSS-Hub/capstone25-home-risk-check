@@ -1,16 +1,17 @@
 import InputBasic from "@/components/InputBasic.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
-import {communityCreateStore} from "@/stores/communityCreateStore.ts";
-import {useEffect, useRef, useState} from "react";
-import {useNavigate, useLocation } from "react-router-dom";
+import {communityCreateStore} from "@/features/community/stores/communityCreateStore";
+import {usePollDraft} from "@/features/community/hooks/usePollDraft";
+import {useNavigate, useLocation} from "react-router-dom";
 
 export default function PollCreatePage() {
-    const { poll, setPoll } = communityCreateStore()
-    const [localPoll, setLocalPoll] = useState(poll)
+    const poll = communityCreateStore(s => s.poll)
     const navigate = useNavigate()
     const { state } = useLocation()
-    const savedRef = useRef<boolean>(!state?.isNew)
+    const isNew = !!(state as { isNew?: boolean } | null)?.isNew
+
+    const { draft: localPoll, setDraft: setLocalPoll, commit } = usePollDraft({ initial: poll, isNew })
 
     const updateOption = (id: string, text: string) => {
         if (!localPoll) return
@@ -39,19 +40,9 @@ export default function PollCreatePage() {
     }
 
     const handleDone = () => {
-        if (!localPoll) return
-        savedRef.current = true
-        setPoll(localPoll)
+        commit()
         navigate(-1)
     }
-
-    useEffect(() => {
-        return () => {
-            if (!savedRef.current) {
-                setPoll(null)
-            }
-        }
-    }, [])
 
     return (
         <>

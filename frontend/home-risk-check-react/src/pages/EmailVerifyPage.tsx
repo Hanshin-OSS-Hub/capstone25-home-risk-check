@@ -2,7 +2,8 @@ import {Button} from '@/components/ui/button'
 import InputCode from '@/components/InputCode'
 import {useState} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {signupStore} from '@/stores/signupStore.ts'
+import {signupStore} from '@/features/auth/stores/signupStore'
+import {ROUTES} from '@/constants/routes'
 // import {authApi} from '@/features/auth/api' // 백엔드 연동 시 활성화
 
 export default function EmailVerifyPage() {
@@ -20,7 +21,7 @@ export default function EmailVerifyPage() {
         try {
             // await authApi.verifyEmailCode({ email, code })
             setIsEmailVerified(true)
-            navigate('/signup')
+            navigate(ROUTES.signup)
         } catch {
             setCodeError('인증 코드가 올바르지 않아요.')
         }

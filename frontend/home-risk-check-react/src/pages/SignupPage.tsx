@@ -7,7 +7,8 @@ import {cn} from '@/lib/utils'
 import {useMemo, useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useNavigate} from 'react-router-dom'
-import {signupStore} from '@/stores/signupStore.ts'
+import {signupStore} from '@/features/auth/stores/signupStore'
+import {ROUTES} from '@/constants/routes'
 // import {authApi} from '@/features/auth/api' // 백엔드 연동 시 활성화
 import axios from 'axios'
 
@@ -32,20 +33,23 @@ const getColor = (score: number) => {
 
 export default function SignupPage() {
     const navigate = useNavigate()
-    const {nickname, setNickname, email, setEmail, isEmailVerified, setIsEmailVerified, password, setPassword, reset } = signupStore()
+    const {nickname, setNickname, email, setEmail, isNicknameChecked, setIsNicknameChecked, isEmailVerified, setIsEmailVerified, password, setPassword, reset } = signupStore()
     const [formErrors, setFormErrors] = useState({nickname: '', email: '', password: ''})
     const [isVisible, setIsVisible] = useState(false)
-    const [isNicknameChecked, setIsNicknameChecked] = useState(false)
     const toggleVisibility = () => setIsVisible(prevState => !prevState)
 
-    const strength = passwordRegex.map(req => ({
-        met: req.regex.test(password),
-        text: req.text
-    }))
+    const strength = useMemo(
+        () => passwordRegex.map(req => ({
+            met: req.regex.test(password),
+            text: req.text,
+        })),
+        [password],
+    )
 
-    const strengthScore = useMemo(() => {
-        return strength.filter(req => req.met).length
-    }, [strength])
+    const strengthScore = useMemo(
+        () => strength.filter(req => req.met).length,
+        [strength],
+    )
 
     const sendEmailCode = async () => {
         if (!email) {
@@ -64,7 +68,7 @@ export default function SignupPage() {
             return
         }
         // await authApi.sendEmailCode(email)
-        navigate('/email-verify')
+        navigate(ROUTES.emailVerify)
     }
 
     const checkNickname = async () => {
@@ -114,7 +118,7 @@ export default function SignupPage() {
         try {
             // await authApi.signup({ nickname, email, password })
             reset()
-            navigate('/login')
+            navigate(ROUTES.login)
         } catch (err) {
             if (axios.isAxiosError(err)) {
                 const data = err.response?.data
@@ -219,7 +223,7 @@ export default function SignupPage() {
                 회원가입
             </Button>
             <div className="text-center text-xs">
-                <span className="text-muted-foreground">이미 회원이신가요?&nbsp;<Link to="/login" className="underline">로그인</Link></span>
+                <span className="text-muted-foreground">이미 회원이신가요?&nbsp;<Link to={ROUTES.login} className="underline">로그인</Link></span>
             </div>
         </div>
     )

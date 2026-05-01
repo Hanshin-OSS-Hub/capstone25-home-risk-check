@@ -3,6 +3,7 @@ import { Logo } from "@/components/layouts/logo";
 import { NavMenu } from "@/components/layouts/NavMenu.tsx";
 import { NavigationSheet } from "@/components/layouts/NavigationSheet.tsx";
 import { Link } from "react-router-dom";
+import { ROUTES } from "@/constants/routes";
 
 const Navbar = () => {
     return (
@@ -16,7 +17,7 @@ const Navbar = () => {
 
                     <div className="flex items-center gap-3">
                         <Button className="rounded-xl cursor-pointer">
-                            <Link to="/signup">회원가입</Link>
+                            <Link to={ROUTES.signup}>회원가입</Link>
                         </Button>
 
                         {/* Mobile Menu */}

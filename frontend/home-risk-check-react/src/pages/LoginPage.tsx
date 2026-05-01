@@ -3,6 +3,7 @@ import InputBasic from '@/components/InputBasic.tsx'
 import {useState} from 'react'
 import {Link, useNavigate} from 'react-router-dom'
 import {useLogin} from '@/features/auth/hooks/useLogin'
+import {ROUTES} from '@/constants/routes'
 import {toast} from 'sonner'
 
 export default function LoginPage() {
@@ -15,7 +16,7 @@ export default function LoginPage() {
         try {
             // 토큰은 httpOnly 쿠키로 서버에서 내려옴 — 클라이언트는 저장하지 않음
             await login.mutateAsync({ email, password })
-            navigate("/", { replace: true })
+            navigate(ROUTES.home, { replace: true })
         } catch {
             toast.error("로그인에 실패했습니다. 다시 시도해주세요.")
         }
@@ -29,8 +30,8 @@ export default function LoginPage() {
                 로그인
             </Button>
             <div className="flex flex-col gap-4 items-center text-xs">
-                <Link to="/">비밀번호를 잊어버리셨나요?</Link>
-                <span className="text-muted-foreground">계정이 없으신가요?&nbsp;<Link to="/signup" className="underline">회원가입</Link></span>
+                <Link to={ROUTES.home}>비밀번호를 잊어버리셨나요?</Link>
+                <span className="text-muted-foreground">계정이 없으신가요?&nbsp;<Link to={ROUTES.signup} className="underline">회원가입</Link></span>
             </div>
         </div>
     )

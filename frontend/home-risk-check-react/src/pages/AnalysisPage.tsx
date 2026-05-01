@@ -6,6 +6,7 @@ import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useLocation} from 'react-router-dom'
 import axios from 'axios'
 import {useAnalyze} from '@/features/analysis/hooks/useAnalyze'
+import {ROUTES} from '@/constants/routes'
 
 export default function AnalysisPage() {
     const [address, setAddress] = useState('')
@@ -21,10 +22,10 @@ export default function AnalysisPage() {
     useEffect(() => {
         if (location.state?.address) {
             setAddress(location.state.address)
-            // state 초기화
-            window.history.replaceState({}, document.title)
+            // router state 비우기 — 새로고침/뒤로가기 시 재주입 방지
+            navigate(location.pathname, { replace: true, state: null })
         }
-    }, [location.state])
+    }, [location.state, location.pathname, navigate])
 
     useEffect(() => {
         return () => {
@@ -66,9 +67,7 @@ export default function AnalysisPage() {
                 address, detailAddress, deposit, registryFiles, buildingFiles,
                 signal: abortControllerRef.current.signal,
             })
-            // sessionStorage에 백업 저장
-            sessionStorage.setItem("analysisResult", JSON.stringify(data))
-            navigate("/analysis-result", { state: { result: data } })
+            navigate(ROUTES.analysisResult(data.id as number), { state: { result: data } })
         } catch (err) {
             if (axios.isCancel(err)) return
         }
@@ -104,7 +103,7 @@ export default function AnalysisPage() {
                             isReadOnly={true}
                             addonButton={{
                                 label:"주소 검색",
-                                onClick :() => navigate("/address-search", {state: {from: location.pathname}})
+                                onClick :() => navigate(ROUTES.addressSearch, {state: {from: location.pathname}})
                             }}
                 />
             </div>

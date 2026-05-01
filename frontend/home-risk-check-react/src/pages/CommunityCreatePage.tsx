@@ -16,12 +16,15 @@ import {
     FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { toast } from "sonner"
+import { logUnexpected } from "@/lib/notify"
 import InputBasic from "@/components/InputBasic.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {useEffect, useRef} from "react";
-import {useNavigate, useBlocker } from "react-router-dom";
-import {communityCreateStore} from "@/stores/communityCreateStore.ts";
+import {useNavigate} from "react-router-dom";
+import {communityCreateStore} from "@/features/community/stores/communityCreateStore";
+import {useDirtyBlocker} from "@/hooks/use-dirty-blocker";
+import {ROUTES} from "@/constants/routes";
 // import {communityApi} from '@/features/community/api' // 백엔드 연동 시 활성화
 import {Image, MapPin, X, Vote} from "lucide-react";
 import mapPinMarker from '@/assets/mapPinMarker.png'
@@ -87,7 +90,7 @@ export default function CommunityCreatePage() {
             // )
             reset()
         } catch (e) {
-            console.error(e)
+            logUnexpected('community.createPost', e)
         }
     }
 
@@ -100,37 +103,11 @@ export default function CommunityCreatePage() {
         placeLat !== null ||
         placeLng !== null;
 
-    const blocker = useBlocker(
-        ({ currentLocation, nextLocation }) =>
-            isDirty &&
-            currentLocation.pathname !== nextLocation.pathname &&
-            !nextLocation.pathname.startsWith("/place-search") &&
-            !nextLocation.pathname.startsWith("/community/poll/new")
-    );
-
-    useEffect(() => {
-        if (blocker.state === "blocked") {
-            toast("작성 중인 내용이 사라집니다.", {
-                duration: Infinity,
-                position: "top-center",
-
-                cancel: {
-                    label: "취소",
-                    onClick: () => {
-                        blocker.reset();
-                    },
-                },
-
-                action: {
-                    label: "나가기",
-                    onClick: () => {
-                        reset();
-                        blocker.proceed();
-                    },
-                },
-            });
-        }
-    }, [blocker.state]);
+    useDirtyBlocker({
+        isDirty,
+        allowPaths: [ROUTES.placeSearch, ROUTES.communityPollNew],
+        onLeave: reset,
+    });
 
     const deletePoll = () => {
         toast("투표를 삭제할까요?", {
@@ -164,7 +141,7 @@ export default function CommunityCreatePage() {
                 multipleChoice: false,
             })
         }
-        navigate('/community/poll/new', { state: { isNew } })
+        navigate(ROUTES.communityPollNew, { state: { isNew } })
     }
 
     return (
@@ -220,7 +197,7 @@ export default function CommunityCreatePage() {
                             <Vote size={22}/>
                             <span>투표</span>
                         </div>
-                        <div className="flex items-center gap-0.5 cursor-pointer text-sm text-muted-foreground" onClick={() =>  navigate("/place-search")}>
+                        <div className="flex items-center gap-0.5 cursor-pointer text-sm text-muted-foreground" onClick={() =>  navigate(ROUTES.placeSearch)}>
                             <MapPin size={22}/>
                             <span>장소</span>
                         </div>

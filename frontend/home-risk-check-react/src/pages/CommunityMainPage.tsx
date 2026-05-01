@@ -1,10 +1,11 @@
 import InputBasic from "@/components/InputBasic.tsx";
+import {Button} from "@/components/ui/button.tsx";
+import {Badge} from "@/components/ui/badge.tsx";
 import {useEffect, useState} from 'react'
 import {useSearchParams, Link} from 'react-router-dom'
 import { usePosts } from '@/features/community/hooks/usePosts'
+import { ROUTES } from '@/constants/routes'
 import {cn} from "@/lib/utils.ts";
-import {Button} from "@/components/ui/button.tsx";
-import {Badge} from "@/components/ui/badge.tsx";
 import {COMMUNITY_CATEGORIES} from "@/constants/category.ts";
 import {Heart, MessageSquareText, PlusIcon} from "lucide-react";
 import {
@@ -96,7 +97,7 @@ export default function CommunityMainPage() {
 
             <div className="flex flex-col gap-4 divide-y">
                 {blogPosts.map((post) => (
-                    <Link key={post.id} to={`/community/${post.id}`}>
+                    <Link key={post.id} to={ROUTES.communityDetail(post.id)}>
                         <div className="flex gap-4 pb-4">
                             <div className="flex flex-1 flex-col gap-2">
                                 <Badge variant="secondary" className="rounded-sm text-gray-700">
@@ -130,7 +131,7 @@ export default function CommunityMainPage() {
                 ))}
             </div>
             <div className="sticky bottom-6 flex justify-end -mt-6">
-                <Link to="/community/new">
+                <Link to={ROUTES.communityNew}>
                     <Button
                         className={cn(
                             "rounded-full h-12 cursor-pointer transition-all duration-300 overflow-hidden",

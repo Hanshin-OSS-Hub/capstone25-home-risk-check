@@ -1,0 +1,24 @@
+import { useQuery } from '@tanstack/react-query'
+import { authApi } from '../api'
+import type { User } from '../types'
+
+export const AUTH_QUERY_KEY = ['auth', 'me'] as const
+
+/**
+ * 현재 로그인 사용자 조회 전용 훅 (read-only).
+ * 로그인/로그아웃 액션은 useLogin / useLogout 사용.
+ */
+export const useAuth = () => {
+    const { data: user, isLoading } = useQuery<User | null>({
+        queryKey: AUTH_QUERY_KEY,
+        queryFn: authApi.me,
+        staleTime: 1000 * 60 * 5,
+        retry: false,
+    })
+
+    return {
+        user: user ?? null,
+        isLoading,
+        isLoggedIn: !!user,
+    }
+}

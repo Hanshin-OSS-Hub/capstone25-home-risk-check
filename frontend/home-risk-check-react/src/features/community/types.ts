@@ -39,6 +39,11 @@ export interface CreatePostBody {
     poll: Poll | null
 }
 
+export interface CreatePostArgs {
+    body: CreatePostBody
+    images: File[]
+}
+
 export interface Comment {
     commentId: number
     parentCommentId: number | null

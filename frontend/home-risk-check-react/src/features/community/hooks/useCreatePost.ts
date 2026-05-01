@@ -1,12 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { communityApi } from '../api'
-import type { CreatePostBody } from '../types'
+import type { CreatePostArgs } from '../types'
 import { POSTS_QUERY_KEY } from './usePosts'
-
-interface CreatePostArgs {
-    body: CreatePostBody
-    images: File[]
-}
 
 export const useCreatePost = () => {
     const queryClient = useQueryClient()

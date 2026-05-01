@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { useInfiniteQuery } from "@tanstack/react-query"
 import InputBasic from "@/components/InputBasic.tsx"
-import { addressApi } from "@/features/address/api"
+import { useAddressSearch } from "@/features/address/hooks/useAddressSearch"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { JusoItem } from "@/features/address/types"
 import { toast } from "sonner"
@@ -38,14 +37,7 @@ export default function AddressSearchPage() {
                 break
             }
         }
-
         return filtered
-    }
-
-    const fetchAddress = async ({ pageParam = 1 }) => {
-        const data = await addressApi.searchJuso({ keyword: debouncedKeyword, page: pageParam })
-        if (data.errorMessage) toast.error(data.errorMessage)
-        return data
     }
 
     const {
@@ -54,18 +46,7 @@ export default function AddressSearchPage() {
         hasNextPage,
         isFetching,
         isFetchingNextPage,
-    } = useInfiniteQuery({
-        queryKey: ["address", debouncedKeyword],
-        queryFn: fetchAddress,
-        enabled: !!debouncedKeyword,
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) => {
-            const nextCount = lastPage.page * 20
-            return nextCount < lastPage.total
-                ? lastPage.page + 1
-                : undefined
-        },
-    })
+    } = useAddressSearch(debouncedKeyword)
 
     const results = data?.pages.flatMap((page) => page.list) ?? []
 

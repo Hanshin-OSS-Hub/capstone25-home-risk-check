@@ -1,6 +1,6 @@
 // components/PrivateRoute.tsx
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/features/auth/hooks/useAuth'
 
 export default function PrivateLayout() {
     const { user, isLoading } = useAuth()

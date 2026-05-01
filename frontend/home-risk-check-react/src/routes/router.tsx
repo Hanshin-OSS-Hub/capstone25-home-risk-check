@@ -3,7 +3,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import RootLayout from '@/components/layouts/RootLayout'
 import AuthLayout from '@/components/layouts/AuthLayout'
 // PrivateLayout: 의도적으로 비활성화 상태(인증 도입 전)
-// import PrivateLayout from '@/components/layouts/PrivateLayout'
+import PrivateLayout from '@/components/layouts/PrivateLayout'
 
 const lazyPage = (factory: () => Promise<{ default: ComponentType }>) => async () => {
     const { default: Component } = await factory()
@@ -22,7 +22,7 @@ export const router = createBrowserRouter([
 
             // 로그인 필요 (PrivateLayout은 의도적 비활성화)
             {
-                // element: <PrivateLayout/>
+                element: <PrivateLayout/>,
                 children: [
                     { path: '/analysis', lazy: lazyPage(() => import('@/pages/AnalysisPage')) },
                     { path: '/community/new', lazy: lazyPage(() => import('@/pages/CommunityCreatePage')) },

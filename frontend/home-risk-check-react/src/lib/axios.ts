@@ -1,4 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
+import { handleAuthExpired } from '@/lib/auth'
 
 declare module 'axios' {
     export interface InternalAxiosRequestConfig {
@@ -62,7 +63,7 @@ api.interceptors.response.use(
         } catch (refreshError) {
             processQueue(refreshError)
             // 라우팅 일관성 + 상태 보존을 위해 직접 location.href 대신 이벤트 emit
-            window.dispatchEvent(new Event('auth:expired'))
+            handleAuthExpired()
             return Promise.reject(refreshError)
         } finally {
             isRefreshing = false

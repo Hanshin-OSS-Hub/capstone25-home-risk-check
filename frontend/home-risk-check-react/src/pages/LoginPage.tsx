@@ -4,7 +4,7 @@ import {useState} from 'react'
 import {Link, useNavigate} from 'react-router-dom'
 import {useLogin} from '@/features/auth/hooks/useLogin'
 import {ROUTES} from '@/constants/routes'
-import {toast} from 'sonner'
+import {showToast} from '@/lib/notify.ts'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -18,7 +18,7 @@ export default function LoginPage() {
             await login.mutateAsync({ email, password })
             navigate(ROUTES.home, { replace: true })
         } catch {
-            toast.error("로그인에 실패했습니다. 다시 시도해주세요.")
+            showToast({ message: "로그인에 실패했습니다. 다시 시도해주세요." })
         }
     }
 

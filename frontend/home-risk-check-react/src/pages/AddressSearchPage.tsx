@@ -4,7 +4,7 @@ import InputBasic from "@/components/InputBasic.tsx"
 import { useAddressSearch } from "@/features/address/hooks/useAddressSearch"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { JusoItem } from "@/features/address/types"
-import { toast } from "sonner"
+import { showToast } from "@/lib/notify.ts"
 
 export default function AddressSearchPage() {
     const [keyword, setKeyword] = useState("")
@@ -18,7 +18,7 @@ export default function AddressSearchPage() {
 
         const specialRegex = /[%=><]/g
         if (specialRegex.test(value)) {
-            toast.error("% = > < 와 같은 특수문자는 사용할 수 없습니다.")
+            showToast({ message: "% = > < 와 같은 특수문자는 사용할 수 없습니다." })
             return value.replace(specialRegex, "")
         }
 
@@ -32,7 +32,7 @@ export default function AddressSearchPage() {
 
         for (const word of sqlKeywords) {
             if (new RegExp(word, "gi").test(filtered)) {
-                toast.error(`${word}와(과) 같은 문자는 사용할 수 없습니다.`)
+                showToast({ message: `${word}와(과) 같은 문자는 사용할 수 없습니다.` })
                 filtered = filtered.replace(new RegExp(word, "gi"), "")
                 break
             }

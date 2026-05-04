@@ -5,8 +5,12 @@ import { ScrollRestoration } from 'react-router-dom'
 
 export default function RootLayout() {
     const isMobile = useIsMobile()
+    const Shell = isMobile ? MobileShell : AppShell
 
-    if (isMobile === null) return null // 초기 깜빡임 방지
-
-    return isMobile ? <><ScrollRestoration /><MobileShell/></> : <><ScrollRestoration/><AppShell/></>
+    return (
+        <>
+            <ScrollRestoration />
+            <Shell />
+        </>
+    )
 }

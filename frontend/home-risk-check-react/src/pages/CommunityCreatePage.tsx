@@ -15,8 +15,7 @@ import {
     FileUploadList,
     FileUploadTrigger,
 } from "@/components/ui/file-upload";
-import { toast } from "sonner"
-import { logUnexpected } from "@/lib/notify"
+import { showToast } from "@/lib/notify.ts"
 import InputBasic from "@/components/InputBasic.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import {Button} from "@/components/ui/button.tsx";
@@ -89,8 +88,11 @@ export default function CommunityCreatePage() {
             //     images,
             // )
             reset()
-        } catch (e) {
-            logUnexpected('community.createPost', e)
+        } catch (err) {
+            showToast({
+                message: (err as any)?.response?.data?.message ?? '요청에 실패했습니다.',
+                variant: 'error',
+            })
         }
     }
 
@@ -110,24 +112,13 @@ export default function CommunityCreatePage() {
     });
 
     const deletePoll = () => {
-        toast("투표를 삭제할까요?", {
-            duration: Infinity,
-            position: "top-center",
-
-            cancel: {
-                label: "취소",
-                onClick: () => {
-                    return;
-                },
-            },
-
-            action: {
-                label: "삭제",
-                onClick: () => {
-                    setPoll(null);
-                },
-            },
-        });
+        showToast({
+            message: "투표를 삭제할까요?",
+            actionLabel: "삭제",
+            cancelLabel: "취소",
+            onConfirm: () => setPoll(null),
+            onCancel: () => {},
+        })
     }
 
     const handleNavigateToPoll = () => {

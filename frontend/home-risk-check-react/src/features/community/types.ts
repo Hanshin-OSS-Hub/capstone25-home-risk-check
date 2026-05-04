@@ -1,4 +1,5 @@
-import type { CommunityCategoryKey } from '@/constants/category'
+export type PostSort = 'latest' | 'popular'
+export type PostCategory = 'all' | 'damage' | 'fraud' | 'law' | 'region' | 'question'
 
 export interface PollOption {
     id: string
@@ -12,7 +13,7 @@ export interface Poll {
 
 export interface Post {
     id: number
-    category: CommunityCategoryKey | string
+    category: PostCategory | string
     title: string
     content?: string
     authorNickname?: string
@@ -21,8 +22,6 @@ export interface Post {
     createdAt?: string
     image?: string
 }
-
-export type PostSort = 'latest' | 'popular'
 
 export interface GetPostsParams {
     sort?: string

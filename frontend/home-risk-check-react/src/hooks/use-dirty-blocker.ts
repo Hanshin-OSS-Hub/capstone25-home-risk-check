@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useBlocker } from 'react-router-dom'
-import { toast } from 'sonner'
+import { showToast } from '@/lib/notify.ts'
 
 interface Options {
     isDirty: boolean
@@ -29,20 +29,15 @@ export function useDirtyBlocker({
 
     useEffect(() => {
         if (blocker.state !== 'blocked') return
-        toast(message, {
-            duration: Infinity,
-            position: 'top-center',
-            cancel: {
-                label: '취소',
-                onClick: () => blocker.reset(),
+        showToast({
+            message,
+            actionLabel: '나가기',
+            cancelLabel: '취소',
+            onConfirm: () => {
+                onLeave?.()
+                blocker.proceed()
             },
-            action: {
-                label: '나가기',
-                onClick: () => {
-                    onLeave?.()
-                    blocker.proceed()
-                },
-            },
+            onCancel: () => blocker.reset(),
         })
     }, [blocker, message, onLeave])
 }

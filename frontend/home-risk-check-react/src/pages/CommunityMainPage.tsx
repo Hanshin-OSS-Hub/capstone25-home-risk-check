@@ -49,7 +49,7 @@ export default function CommunityMainPage() {
 
     const handleSortChange = (sort: string) => updateParams({ sort })
     const handleCategoryChange = (category: string) => updateParams({ category })
-    const handleQueryChange = () => updateParams({ query: keyword.trim() || undefined })
+    const handleQueryChange = (keyword: string) => updateParams({ query: keyword.trim() || undefined })
 
     return (
         <>
@@ -58,7 +58,7 @@ export default function CommunityMainPage() {
                 value={keyword}
                 onChange={setKeyword}
                 onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleQueryChange()
+                    if (e.key === 'Enter') handleQueryChange(keyword)
                 }}
                 isClearable={true}
             />

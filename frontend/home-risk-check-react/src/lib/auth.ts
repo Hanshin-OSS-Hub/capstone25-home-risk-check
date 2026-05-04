@@ -1,0 +1,10 @@
+import { queryClient } from '@/app/providers/QueryProvider'
+import { router } from '@/routes/router'
+import { ROUTES } from '@/constants/routes'
+import { AUTH_QUERY_KEY } from '@/features/auth/hooks/useAuth'
+
+// 인터셉터에서 발행하는 인증 만료 이벤트 — 캐시 무효화 + 라우터 이동
+export const handleAuthExpired = () => {
+    queryClient.setQueryData(AUTH_QUERY_KEY, null)
+    void router.navigate(ROUTES.login, { replace: true })
+}

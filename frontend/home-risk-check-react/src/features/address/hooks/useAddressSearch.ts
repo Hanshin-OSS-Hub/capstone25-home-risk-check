@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { showToast } from '@/lib/notify.ts'
 import { addressApi } from '../api'
 import type { JusoPage } from '../types'
 
@@ -13,7 +13,7 @@ export const useAddressSearch = (keyword: string) =>
                 keyword,
                 page: pageParam as number,
             })
-            if (data.errorMessage) toast.error(data.errorMessage)
+            if (data.errorMessage) showToast({ message: data.errorMessage, variant: 'warning' })
             return data
         },
         enabled: !!keyword,

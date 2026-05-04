@@ -1,23 +1,45 @@
 import { toast } from 'sonner'
-import type { AxiosError } from 'axios'
 
-interface ApiErrorBody {
-    message?: string
+type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info'
+
+interface ShowToastOptions {
+    message: string
+    /** sonner variant. 'default' 외엔 색상/아이콘이 입혀짐. */
+    variant?: ToastVariant
+    /** 미지정 시 — 액션 버튼 있으면 Infinity, 없으면 sonner 기본값. */
+    duration?: number
+    actionLabel?: string
+    cancelLabel?: string
+    onConfirm?: () => void
+    onCancel?: () => void
 }
 
-/** 사용자에게 보일 에러 메시지를 추출. AxiosError 면 응답 message, 아니면 fallback. */
-export const extractErrorMessage = (err: unknown, fallback = '요청 중 오류가 발생했습니다.'): string => {
-    const axiosErr = err as AxiosError<ApiErrorBody> | undefined
-    return axiosErr?.response?.data?.message ?? fallback
-}
+/**
+ * 단일 진입점 토스트 헬퍼.
+ * - 단순 알림: variant + message (+ duration)
+ * - 사용자 확인: actionLabel/cancelLabel + onConfirm/onCancel
+ */
+export const showToast = ({
+    message,
+    variant = 'default',
+    duration,
+    actionLabel,
+    cancelLabel,
+    onConfirm,
+    onCancel,
+}: ShowToastOptions) => {
+    const hasAction = !!(actionLabel && onConfirm)
+    const hasCancel = !!(cancelLabel && onCancel)
+    const fn = variant === 'default' ? toast : toast[variant]
 
-/** 사용자 토스트 + (개발 모드) 콘솔 로그. console.error 직접 호출을 대체. */
-export const notifyError = (err: unknown, fallback?: string) => {
-    toast.error(extractErrorMessage(err, fallback))
-    if (import.meta.env.DEV) console.error(err)
-}
-
-/** 사용자에 노출하지 않고 개발 로그만 — 무시 가능한 catch 에 사용. */
-export const logUnexpected = (context: string, err: unknown) => {
-    if (import.meta.env.DEV) console.error(`[${context}]`, err)
+    fn(message, {
+        position: 'top-center',
+        duration: duration ?? (hasAction ? Infinity : undefined),
+        ...(hasAction && {
+            action: { label: actionLabel!, onClick: onConfirm! },
+        }),
+        ...(hasCancel && {
+            cancel: { label: cancelLabel!, onClick: onCancel! },
+        }),
+    })
 }

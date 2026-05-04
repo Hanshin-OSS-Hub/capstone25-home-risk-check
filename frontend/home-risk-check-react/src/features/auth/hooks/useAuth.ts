@@ -19,6 +19,6 @@ export const useAuth = () => {
     return {
         user: user ?? null,
         isLoading,
-        isLoggedIn: !!user,
+        isLoggedIn: user !== null,
     }
 }

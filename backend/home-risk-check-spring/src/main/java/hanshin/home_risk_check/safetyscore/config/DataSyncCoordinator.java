@@ -113,8 +113,13 @@ public class DataSyncCoordinator {
                 jdbcTemplate.execute(query);
                 log.info("공간 인덱스 생성 완료: {}", query);
             } catch (org.springframework.dao.DataAccessException e) {
+                String errorMessage = e.getMessage();
+                if (e.getCause() != null && e.getCause().getMessage() != null) {
+                    errorMessage += " | " + e.getCause().getMessage();
+                }
+
                 // 인덱스가 이미 만들어져 있는 경우 -> 에러가 아니므로 그냥 스킵
-                if (e.getMessage() != null && e.getMessage().contains("Duplicate key name")) {
+                if (errorMessage != null && errorMessage.contains("Duplicate key name")) {
                     log.debug("공간 인덱스가 이미 존재합니다. 스킵: {}", query);
                 } else {
                     // 쿼리 오타나 DB 연결 문제 등 '진짜' DB 에러 -> 에러 로그 남기고 강제 중단

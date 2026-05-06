@@ -37,7 +37,10 @@ public enum ErrorCode {
     /*
      * 입력값 검증 실패
      */
-    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, 400, "입력값이 올바르지 않습니다.");
+    INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, 400, "입력값이 올바르지 않습니다."),
+
+    // 데이터 동기화 진행중
+    DATA_SYNC_IN_PROGRESS(HttpStatus.SERVICE_UNAVAILABLE, 503, "시스템 안전 점수 데이터를 준비 중입니다. 잠시 후 다시 시도해 주세요.");
 
     private final HttpStatus httpStatus;
     private final int code;

@@ -1,5 +1,7 @@
 package hanshin.home_risk_check.safetyscore.domain.score.service;
 
+import hanshin.home_risk_check.global.exception.BusinessException;
+import hanshin.home_risk_check.global.exception.ErrorCode;
 import hanshin.home_risk_check.safetyscore.config.SafetyScoreProperties;
 import hanshin.home_risk_check.safetyscore.domain.accident.repository.TrafficRepository;
 import hanshin.home_risk_check.safetyscore.domain.cctv.repository.CctvRepository;
@@ -12,6 +14,7 @@ import hanshin.home_risk_check.safetyscore.infra.api.KakaoApiCaller;
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +30,8 @@ public class SafetyScoreService {
     private final PoliceStationRepository policeStationRepository;
     private final FireStationRepository fireStationRepository;
     private final TrafficRepository trafficRepository;
-
     private final SafetyScoreProperties properties;
+    private final RedisTemplate<String, String> redisTemplate;
 
     /**
      * 교통사고 다발지역(핫스팟) 밀집도 가중치 = 4.5
@@ -39,6 +42,8 @@ public class SafetyScoreService {
 
 
     public SafetyScoreResponse calculateSafetyScore(String address) {
+        // (데이터가 없으면 여기서 BusinessException이 터지면서 빈 응답(503 에러)을 반환하고 아래 로직은 실행 안 됨)
+        verifyDataReadyState();
 
         //카카오 API를 통해 주소 -> 좌표 및 행정동 코드 반환
         KakaoApiResponse.KakaoDocument document = kakaoApiCaller.searchAddress(address);
@@ -125,5 +130,14 @@ public class SafetyScoreService {
                 .meta(responseMeta)
                 .data(responseData)
                 .build();
+    }
+
+    private void verifyDataReadyState() {
+        String isReady = redisTemplate.opsForValue().get("system:is_data_ready");
+
+        if (!"true".equals(isReady)) {
+            log.warn("안전 점수 조회 요청 거부: 초기 데이터가 아직 준비되지 않았습니다.");
+            throw new BusinessException(ErrorCode.DATA_SYNC_IN_PROGRESS);
+        }
     }
 }

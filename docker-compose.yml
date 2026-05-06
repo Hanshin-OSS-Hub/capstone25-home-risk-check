@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # 1. Spring Backend
   home-risk-check-spring:
@@ -9,8 +7,6 @@ services:
     container_name: home-risk-check-spring
     ports:
       - "8080:8080"
-    volumes:
-      - ./backend/home-risk-check-spring:/app
     env_file:
       - ./backend/home-risk-check-spring/.env
     depends_on:

@@ -1,11 +1,13 @@
 package hanshin.home_risk_check.safetyscore.infra.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -13,6 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
+
+import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -29,17 +34,69 @@ public class KakaoApiCaller {
     private static final String KAKAO_LOCAL_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json";
 
     private final RestTemplate restTemplate;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Retry(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
     @CircuitBreaker(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
     public KakaoApiResponse.KakaoDocument searchPlace(String keyWord){
-        return requestKakaoApi(KAKAO_LOCAL_KEYWORD_URL, keyWord);
+        String cacheKey = "kakaoPlaceCache:" + keyWord.replaceAll("\\s+", "");
+
+        // Redis 캐시 먼저 확인
+        try {
+            String json = redisTemplate.opsForValue().get(cacheKey);
+            if (json != null) {
+                log.info("Redis 캐시에서 장소 데이터 호출 완료 - Key: {}", cacheKey);
+                return objectMapper.readValue(json, KakaoApiResponse.KakaoDocument.class);
+            }
+        } catch (Exception e) {
+            log.warn("캐시 읽기 실패: {}", e.getMessage());
+        }
+
+        KakaoApiResponse.KakaoDocument result = requestKakaoApi(KAKAO_LOCAL_KEYWORD_URL, keyWord);
+
+        // API 응답이 정상이면 Redis에 저장 (TTL 24시간)
+        if (result != null) {
+            try {
+                String json = objectMapper.writeValueAsString(result);
+                redisTemplate.opsForValue().set(cacheKey, json, 24, TimeUnit.HOURS);
+                log.info("Redis에 새로운 장소 데이터 저장 완료 - Key: {}", cacheKey);
+            } catch (Exception e) {
+                log.warn("캐시 저장 실패: {}", e.getMessage());
+            }
+        }
+        return result;
     }
 
     @Retry(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
     @CircuitBreaker(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
     public KakaoApiResponse.KakaoDocument searchAddress(String address){
-        return requestKakaoApi(KAKAO_LOCAL_ADDRESS_URL, address);
+        String cacheKey = "kakaoAddressCache:" + address.replaceAll("\\s+", "");
+        // Redis 캐시 먼저 확인
+        try {
+            String json = redisTemplate.opsForValue().get(cacheKey);
+            if (json != null)  {
+                log.info("Redis 캐시에서 주소 데이터 호출 완료 - Key: {}", cacheKey);
+                return objectMapper.readValue(json, KakaoApiResponse.KakaoDocument.class);
+            }
+        } catch (Exception e) {
+            log.warn("캐시 읽기 실패: {}", e.getMessage());
+        }
+
+        KakaoApiResponse.KakaoDocument result = requestKakaoApi(KAKAO_LOCAL_ADDRESS_URL, address);
+
+        // API 응답이 정상이면 Redis에 저장 (TTL 24시간)
+        if (result != null) {
+            try {
+                String json = objectMapper.writeValueAsString(result);
+                redisTemplate.opsForValue().set(cacheKey, json, 24, TimeUnit.HOURS);
+                log.info("Redis에 새로운 주소 데이터 저장 완료 - Key: {}", cacheKey);
+            } catch (Exception e) {
+                log.warn("캐시 저장 실패: {}", e.getMessage());
+            }
+        }
+
+        return result;
     }
 
     /**

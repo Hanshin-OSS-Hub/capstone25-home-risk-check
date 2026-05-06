@@ -1,6 +1,8 @@
 package hanshin.home_risk_check.safetyscore.infra.api;
 
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,48 +30,62 @@ public class KakaoApiCaller {
 
     private final RestTemplate restTemplate;
 
+    @Retry(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
+    @CircuitBreaker(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
     public KakaoApiResponse.KakaoDocument searchPlace(String keyWord){
         return requestKakaoApi(KAKAO_LOCAL_KEYWORD_URL, keyWord);
     }
 
+    @Retry(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
+    @CircuitBreaker(name = "kakaoApi", fallbackMethod = "fallbackKakaoApi")
     public KakaoApiResponse.KakaoDocument searchAddress(String address){
         return requestKakaoApi(KAKAO_LOCAL_ADDRESS_URL, address);
     }
 
+    /**
+     * API 통신 로직
+     */
     public KakaoApiResponse.KakaoDocument requestKakaoApi(String url, String query) {
-        try {
-            //Kakao API : KakaoAK {REST_API_KEY} 들어가야함
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "KakaoAK " + kakaoApiKey);
-            HttpEntity<String> entity = new HttpEntity<>(headers);
+        //Kakao API : KakaoAK {REST_API_KEY} 들어가야함
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "KakaoAK " + kakaoApiKey);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            // URL 생성
-            String uriString = UriComponentsBuilder.fromUriString(url)
-                    .queryParam("query", query)
-                    .queryParam("size", 1)
-                    .build()
-                    .toUriString();
+        // URL 생성
+        String uriString = UriComponentsBuilder.fromUriString(url)
+                .queryParam("query", query)
+                .queryParam("size", 1)
+                .build()
+                .toUriString();
 
-            // API 통신
-            ResponseEntity<KakaoApiResponse> response = restTemplate.exchange(
-                    uriString,
-                    HttpMethod.GET,
-                    entity,
-                    KakaoApiResponse.class
-            );
+        // API 통신
+        ResponseEntity<KakaoApiResponse> response = restTemplate.exchange(
+                uriString,
+                HttpMethod.GET,
+                entity,
+                KakaoApiResponse.class
+        );
 
-            // 결과 꺼내기
-            if (response.getBody() != null &&
-                    response.getBody().getDocumentList() != null &&
-                    !response.getBody().getDocumentList().isEmpty()) {
+        // 결과 꺼내기
+        if (response.getBody() != null &&
+                response.getBody().getDocumentList() != null &&
+                !response.getBody().getDocumentList().isEmpty()) {
 
-                return response.getBody().getDocumentList().get(0);
-            }
-
-        } catch (Exception e) {
-            log.error("카카오 로컬 API 호출 중 오류 발생. 검색어: {}", query, e);
+            return response.getBody().getDocumentList().get(0);
         }
 
+        return null;
+    }
+
+    /**
+     * Fallback 메서드
+     * 원본 메서드(searchPlace, searchAddress)의 파라미터 시그니처와 일치해야 하며,
+     * 마지막 파라미터로 Throwable 객체를 받아야 Resilience4j가 리플렉션을 통해 정상 호출할 수 있습니다.
+     */
+    public KakaoApiResponse.KakaoDocument fallbackKakaoApi(String query, Throwable t) {
+        log.error("[Fallback] 카카오 API 호출 실패 (재시도 초과 또는 서킷 오픈). 입력값: {}, 원인: {}", query, t.getMessage());
+
+        // 에러 발생 시 시스템 셧다운을 막기 위해 null 또는 빈 객체를 반환합니다.
         return null;
     }
 

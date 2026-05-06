@@ -28,6 +28,7 @@ import {ROUTES} from "@/constants/routes";
 import {Image, MapPin, X, Vote} from "lucide-react";
 import mapPinMarker from '@/assets/mapPinMarker.png'
 import {COMMUNITY_CATEGORIES} from "@/constants/category.ts";
+import {getApiErrorMessage} from "@/lib/api-response";
 
 export default function CommunityCreatePage() {
     const {
@@ -90,7 +91,7 @@ export default function CommunityCreatePage() {
             reset()
         } catch (err) {
             showToast({
-                message: (err as any)?.response?.data?.message ?? '요청에 실패했습니다.',
+                message: getApiErrorMessage(err),
                 variant: 'error',
             })
         }

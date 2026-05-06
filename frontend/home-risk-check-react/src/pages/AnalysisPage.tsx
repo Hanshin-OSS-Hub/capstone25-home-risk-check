@@ -4,9 +4,9 @@ import {Button} from '@/components/ui/button'
 import {Card, CardTitle, CardContent} from '@/components/ui/card'
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useLocation} from 'react-router-dom'
-import axios from 'axios'
 import {useAnalyze} from '@/features/analysis/hooks/useAnalyze'
 import {ROUTES} from '@/constants/routes'
+import {isCanceledApiError} from '@/lib/api-response'
 
 export default function AnalysisPage() {
     const [address, setAddress] = useState('')
@@ -69,7 +69,7 @@ export default function AnalysisPage() {
             })
             navigate(ROUTES.analysisResult(data.id as number), { state: { result: data } })
         } catch (err) {
-            if (axios.isCancel(err)) return
+            if (isCanceledApiError(err)) return
         }
     }
 

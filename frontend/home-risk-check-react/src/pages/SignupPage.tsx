@@ -10,7 +10,7 @@ import {useNavigate} from 'react-router-dom'
 import {signupStore} from '@/features/auth/stores/signupStore'
 import {ROUTES} from '@/constants/routes'
 // import {authApi} from '@/features/auth/api' // 백엔드 연동 시 활성화
-import axios from 'axios'
+import {normalizeApiError} from '@/lib/api-response'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -120,13 +120,11 @@ export default function SignupPage() {
             reset()
             navigate(ROUTES.login)
         } catch (err) {
-            if (axios.isAxiosError(err)) {
-                const data = err.response?.data
-                if (data?.field === 'nickname') {
-                    setFormErrors(prev => ({...prev, nickname: '이미 사용 중인 닉네임이에요.'}))
-                } else {
-                    setFormErrors(prev => ({...prev, email: '이미 사용 중인 이메일이에요.'}))
-                }
+            const apiError = normalizeApiError(err)
+            if (apiError.field === 'nickname') {
+                setFormErrors(prev => ({...prev, nickname: apiError.message}))
+            } else {
+                setFormErrors(prev => ({...prev, email: apiError.message}))
             }
         }
     }

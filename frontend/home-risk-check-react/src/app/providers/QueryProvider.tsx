@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { AxiosError } from 'axios'
+import { getApiErrorStatus } from '@/lib/api-response'
 
 export const queryClient = new QueryClient({
     defaultOptions: {
@@ -8,7 +8,7 @@ export const queryClient = new QueryClient({
             staleTime: 30_000,
             refetchOnWindowFocus: false,
             retry: (failureCount, error) => {
-                const status = (error as AxiosError | undefined)?.response?.status
+                const status = getApiErrorStatus(error)
                 if (status === 401 || status === 403 || status === 404) return false
                 return failureCount < 1
             },

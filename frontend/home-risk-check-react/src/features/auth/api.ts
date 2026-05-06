@@ -1,13 +1,15 @@
 import { api } from '@/lib/axios'
+import { getApiErrorStatus, unwrapApiData, type ApiEnvelope } from '@/lib/api-response'
 import type { LoginRequest, SignupRequest, User, VerifyEmailRequest } from './types'
 
 export const authApi = {
     me: async (): Promise<User | null> => {
         try {
-            const res = await api.get<User>('/api/auth/me')
-            return res.data
-        } catch {
-            return null
+            const res = await api.get<ApiEnvelope<User>>('/api/auth/me')
+            return unwrapApiData(res.data)
+        } catch (error) {
+            if (getApiErrorStatus(error) === 401) return null
+            throw error
         }
     },
 

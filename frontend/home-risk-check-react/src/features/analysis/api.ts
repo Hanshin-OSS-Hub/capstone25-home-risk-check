@@ -1,4 +1,5 @@
 import { api } from '@/lib/axios'
+import { unwrapApiData, type ApiEnvelope } from '@/lib/api-response'
 import type { AnalyzeRequest, AnalyzeResult } from './types'
 
 export const analysisApi = {
@@ -10,10 +11,10 @@ export const analysisApi = {
         req.registryFiles.forEach(f => formData.append('registryFiles', f))
         req.buildingFiles.forEach(f => formData.append('buildingFiles', f))
 
-        const res = await api.post<AnalyzeResult>('/api/analyze', formData, {
+        const res = await api.post<ApiEnvelope<AnalyzeResult>>('/api/analyze', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             signal,
         })
-        return res.data
+        return unwrapApiData(res.data)
     },
 }

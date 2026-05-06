@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authApi } from '../api'
+import { authKeys } from '../queryKeys'
 import type { LoginRequest } from '../types'
-import { AUTH_QUERY_KEY } from './useAuth'
 
 export const useLogin = () => {
     const queryClient = useQueryClient()
@@ -9,7 +9,7 @@ export const useLogin = () => {
     return useMutation({
         mutationFn: (body: LoginRequest) => authApi.login(body),
         onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY })
+            void queryClient.invalidateQueries({ queryKey: authKeys.me() })
         },
     })
 }

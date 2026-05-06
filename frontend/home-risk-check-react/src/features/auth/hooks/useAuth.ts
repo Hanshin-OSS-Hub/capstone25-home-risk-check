@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { authApi } from '../api'
+import { authKeys } from '../queryKeys'
 import type { User } from '../types'
-
-export const AUTH_QUERY_KEY = ['auth', 'me'] as const
 
 /**
  * 현재 로그인 사용자 조회 전용 훅 (read-only).
@@ -10,7 +9,7 @@ export const AUTH_QUERY_KEY = ['auth', 'me'] as const
  */
 export const useAuth = () => {
     const { data: user, isLoading } = useQuery<User | null>({
-        queryKey: AUTH_QUERY_KEY,
+        queryKey: authKeys.me(),
         queryFn: authApi.me,
         staleTime: 1000 * 60 * 5,
         retry: false,

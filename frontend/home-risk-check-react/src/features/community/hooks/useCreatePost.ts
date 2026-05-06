@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { communityApi } from '../api'
+import { communityKeys } from '../queryKeys'
 import type { CreatePostArgs } from '../types'
-import { POSTS_QUERY_KEY } from './usePosts'
 
 export const useCreatePost = () => {
     const queryClient = useQueryClient()
@@ -9,7 +9,7 @@ export const useCreatePost = () => {
     return useMutation({
         mutationFn: ({ body, images }: CreatePostArgs) => communityApi.createPost(body, images),
         onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: [POSTS_QUERY_KEY] })
+            void queryClient.invalidateQueries({ queryKey: communityKeys.postsRoot() })
         },
     })
 }

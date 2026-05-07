@@ -39,7 +39,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     implementation 'org.hibernate.orm:hibernate-spatial'
     implementation 'org.locationtech.jts:jts-core:1.19.0'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -49,7 +49,12 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
 	implementation 'org.mapstruct:mapstruct:1.6.3'
-	implementation 'org.mapstruct:mapstruct-processor:1.6.3'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+    implementation 'org.redisson:redisson:3.24.3'
+    implementation 'org.springframework.boot:spring-boot-starter-aop:3.4.3'
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
 }
 
 tasks.named('test') {

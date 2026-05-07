@@ -12,7 +12,7 @@ import org.locationtech.jts.geom.Point;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "cctvs",
         indexes = {
-                @Index(name = "idx_cctv_adm_code", columnList = "adm_code")
+                @Index(name = "idx_cctv_sgis_code", columnList = "sgis_code")
         }
 )
 public  class Cctv {

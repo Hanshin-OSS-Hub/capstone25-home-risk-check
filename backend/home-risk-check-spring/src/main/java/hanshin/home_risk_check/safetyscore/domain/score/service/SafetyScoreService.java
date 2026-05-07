@@ -1,5 +1,8 @@
 package hanshin.home_risk_check.safetyscore.domain.score.service;
 
+import hanshin.home_risk_check.global.exception.BusinessException;
+import hanshin.home_risk_check.global.exception.ErrorCode;
+import hanshin.home_risk_check.safetyscore.config.SafetyScoreProperties;
 import hanshin.home_risk_check.safetyscore.domain.accident.repository.TrafficRepository;
 import hanshin.home_risk_check.safetyscore.domain.cctv.repository.CctvRepository;
 import hanshin.home_risk_check.safetyscore.domain.fire.repository.FireStationRepository;
@@ -11,6 +14,7 @@ import hanshin.home_risk_check.safetyscore.infra.api.KakaoApiCaller;
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +30,8 @@ public class SafetyScoreService {
     private final PoliceStationRepository policeStationRepository;
     private final FireStationRepository fireStationRepository;
     private final TrafficRepository trafficRepository;
+    private final SafetyScoreProperties properties;
+    private final RedisTemplate<String, String> redisTemplate;
 
     /**
      * 교통사고 다발지역(핫스팟) 밀집도 가중치 = 4.5
@@ -33,9 +39,11 @@ public class SafetyScoreService {
      *  - 다발지역이 존재한다는 것 자체로 평균 4.5건의 집중된 구조적 위험이
      *   있다는 논리적 근거에 기반하여 페널티 부여.
      **/
-    private static final double HOTSPOT_STRUCTURAL_WEIGHT = 4.5;
+
 
     public SafetyScoreResponse calculateSafetyScore(String address) {
+        // (데이터가 없으면 여기서 BusinessException이 터지면서 빈 응답(503 에러)을 반환하고 아래 로직은 실행 안 됨)
+        verifyDataReadyState();
 
         //카카오 API를 통해 주소 -> 좌표 및 행정동 코드 반환
         KakaoApiResponse.KakaoDocument document = kakaoApiCaller.searchAddress(address);
@@ -56,10 +64,11 @@ public class SafetyScoreService {
         String sgisCode = region.getSgisCode();
 
         // 집 주변 500m 인프라 수집
-        int localCctv = cctvRepository.sumCameraCountWithinRadius(lat, lon, 500.0);
-        int localPolice = policeStationRepository.countPoliceWithinRadius(lat, lon, 500.0);
-        int localFire = fireStationRepository.countFireStationsWithinRadius(lat, lon, 500.0);
-        int hotspotCount = trafficRepository.countAccidentAreaWithinRadius(lat, lon, 500.0);
+        double radius = properties.radius();
+        int localCctv = cctvRepository.sumCameraCountWithinRadius(lat, lon, radius);
+        int localPolice = policeStationRepository.countPoliceWithinRadius(lat, lon, radius);
+        int localFire = fireStationRepository.countFireStationsWithinRadius(lat, lon, radius);
+        int hotspotCount = trafficRepository.countAccidentAreaWithinRadius(lat, lon, radius);
 
         // 동네 기본 점수 가져오기
         double score = region.getSafetyScore();
@@ -72,7 +81,7 @@ public class SafetyScoreService {
 
         if (regionArea != null && totalCctvInRegion != null && totalCctvInRegion > 0) {
             double regionDensity = totalCctvInRegion / regionArea; // 동네 평균 밀도
-            double targetArea = Math.PI * Math.pow(500, 2);       // 반경 500m 면적
+            double targetArea = Math.PI * Math.pow(radius, 2);       // 반경 500m 면적
             double targetDensity = (double) localCctv / targetArea; // 내 주변 밀도
 
             densityRatio = targetDensity / regionDensity; // 내 주변 CCTV 밀도 / 동네 평균 밀도
@@ -82,19 +91,19 @@ public class SafetyScoreService {
                 densityScore = -10.0; // 아예 없으면 확실하게 -10점 타격
             } else {
                 // 0.1 더하는 꼼수 제거! 순수하게 1배일 때 딱 0점이 됨 (log(1) = 0)
-                densityScore = Math.log(densityRatio) * 5.0; // 가중치를 4.0에서 5.0으로 살짝 올림
+                densityScore = Math.log(densityRatio) * properties.densityWeight(); // 가중치를 4.0에서 5.0으로 살짝 올림
             }
             // 캡핑 씌우기 (-10 ~ +10)
             score += Math.max(-10.0, Math.min(10.0, densityScore));
         }
 
         // 경찰서 / 소방서가 500m 안에 있으면 가점
-        if (localPolice > 0) score += 5.0;
-        if (localFire > 0) score += 2.0;
+        if (localPolice > 0) score += properties.policeScore();
+        if (localFire > 0) score += properties.fireScore();
 
         // 교통사고 다발지역이 근처에 있으면 감점
         if (hotspotCount > 0) {
-            score -= (hotspotCount * HOTSPOT_STRUCTURAL_WEIGHT);
+            score -= (hotspotCount * properties.hotspotWeight());
         }
 
         // 점수가 0 미만이거나 100을 초과하지 않도록 보정
@@ -121,5 +130,14 @@ public class SafetyScoreService {
                 .meta(responseMeta)
                 .data(responseData)
                 .build();
+    }
+
+    private void verifyDataReadyState() {
+        String isReady = redisTemplate.opsForValue().get("system:is_data_ready");
+
+        if (!"true".equals(isReady)) {
+            log.warn("안전 점수 조회 요청 거부: 초기 데이터가 아직 준비되지 않았습니다.");
+            throw new BusinessException(ErrorCode.DATA_SYNC_IN_PROGRESS);
+        }
     }
 }

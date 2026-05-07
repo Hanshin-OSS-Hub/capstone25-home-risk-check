@@ -15,13 +15,15 @@ public enum ErrorCode {
     INVALID_COMMENT_DEPTH(HttpStatus.BAD_REQUEST, 400, "대댓글에는 답글을 작성할 수 없습니다."),
     FORBIDDEN_REQUEST(HttpStatus.FORBIDDEN, 403, "권한이 없습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, 400, "입력값이 올바르지 않습니다."),
-
     POST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "게시글 이미지를 찾을 수 없습니다."),
     INVALID_POST_IMAGE(HttpStatus.BAD_REQUEST, 400, "해당 게시글의 이미지가 아닙니다."),
     TOO_MANY_IMAGES(HttpStatus.BAD_REQUEST, 400, "게시글 이미지는 최대 10장까지 업로드할 수 있습니다."),
     EMPTY_IMAGE_REQUEST(HttpStatus.BAD_REQUEST, 400, "업로드할 이미지가 없습니다."),
     INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, 400, "지원하지 않는 이미지 형식입니다."),
-    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "파일 업로드에 실패했습니다.");
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "파일 업로드에 실패했습니다."),
+  
+    // 데이터 동기화 진행중
+    DATA_SYNC_IN_PROGRESS(HttpStatus.SERVICE_UNAVAILABLE, 503, "시스템 안전 점수 데이터를 준비 중입니다. 잠시 후 다시 시도해 주세요.");
 
     private final HttpStatus httpStatus;
     private final int code;

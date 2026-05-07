@@ -8,9 +8,6 @@ import java.time.LocalDateTime;
 
 /*
  * 댓글 응답 DTO
- *
- * 엔티티 내부는 JPA 연관관계로 맵핑되어 있어도,
- * 프론트/API 응답은 ID 기반으로 유지한다.
  */
 @Getter
 @Builder
@@ -25,16 +22,11 @@ public class CommentResponse {
     private Integer depth;
     private LocalDateTime createdAt;
 
-    /*
-     * Entity -> DTO 변환
-     *
-     * 연관관계 객체에서 필요한 ID만 꺼내서 응답에 담는다.
-     */
     public static CommentResponse from(Comment comment) {
         return CommentResponse.builder()
                 .commentId(comment.getCommentId())
                 .postId(comment.getPost().getPostId())
-                .authorId(comment.getAuthorId())
+                .authorId(comment.getUser().getId()) // [변경] comment.getAuthorId() -> comment.getUser().getId()
                 .content(comment.getContent())
                 .parentCommentId(
                         comment.getParentComment() != null

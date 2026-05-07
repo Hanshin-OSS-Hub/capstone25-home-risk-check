@@ -8,6 +8,8 @@ import hanshin.home_risk_check.community.repository.CommentRepository;
 import hanshin.home_risk_check.community.repository.PostRepository;
 import hanshin.home_risk_check.global.exception.BusinessException;
 import hanshin.home_risk_check.global.exception.ErrorCode;
+import hanshin.home_risk_check.user.entity.User; // [변경] 작성자 User 사용
+import hanshin.home_risk_check.user.repository.UserRepository; // [변경] email로 User 조회
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,8 +18,6 @@ import java.util.List;
 
 /*
  * 댓글 Service
- *
- * 댓글 관련 비즈니스 로직 처리 계층
  */
 @Service
 @RequiredArgsConstructor
@@ -26,6 +26,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final UserRepository userRepository; // [변경] 로그인 사용자 조회용 Repository 추가
 
     /*
      * 특정 게시글의 댓글 목록 조회
@@ -42,18 +43,11 @@ public class CommentService {
 
     /*
      * 댓글 작성
-     *
-     * 정책:
-     * - depth 0: 일반 댓글
-     * - depth 1: 대댓글
-     * - 대댓글의 대댓글은 허용하지 않음
      */
     @Transactional
-    public CommentResponse createComment(Long postId, Long authorId, CommentCreateRequest request) {
+    public CommentResponse createComment(Long postId, String email, CommentCreateRequest request) { // [변경] Long authorId -> String email
+        User user = findLoginUser(email); // [변경] email로 실제 로그인 User 조회
 
-        /*
-         * 댓글이 달릴 게시글이 실제 존재하는지 확인
-         */
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 
@@ -61,15 +55,11 @@ public class CommentService {
 
         /*
          * 1) 일반 댓글 작성
-         *
-         * 일반 댓글은 parentComment = null
-         * rootComment도 처음엔 null로 저장하고,
-         * 저장 후 자기 자신을 rootComment로 세팅한다.
          */
         if (parentCommentId == null) {
             Comment rootComment = Comment.builder()
                     .post(post)
-                    .authorId(authorId)
+                    .user(user) // [변경] authorId 대신 User 연관관계 저장
                     .content(request.getContent())
                     .parentComment(null)
                     .rootComment(null)
@@ -78,10 +68,6 @@ public class CommentService {
 
             Comment saved = commentRepository.save(rootComment);
 
-            /*
-             * 루트 댓글은 자기 자신이 rootComment가 된다.
-             * 트랜잭션 안이므로 dirty checking으로 반영된다.
-             */
             saved.setRootComment(saved);
 
             return CommentResponse.from(saved);
@@ -92,25 +78,17 @@ public class CommentService {
          */
         Comment parent = findComment(parentCommentId);
 
-        /*
-         * 다른 게시글의 댓글에 대댓글 다는 것 방지
-         */
         if (!parent.getPost().getPostId().equals(postId)) {
             throw new BusinessException(ErrorCode.INVALID_COMMENT_POST);
         }
 
-        /*
-         * 대댓글의 대댓글 방지
-         *
-         * 현재 정책상 depth 1까지만 허용
-         */
         if (parent.getDepth() >= 1) {
             throw new BusinessException(ErrorCode.INVALID_COMMENT_DEPTH);
         }
 
         Comment reply = Comment.builder()
                 .post(post)
-                .authorId(authorId)
+                .user(user) // [변경] authorId 대신 User 연관관계 저장
                 .content(request.getContent())
                 .parentComment(parent)
                 .rootComment(parent)
@@ -126,9 +104,11 @@ public class CommentService {
      * 댓글 삭제
      */
     @Transactional
-    public void deleteComment(Long commentId, Long authorId) {
+    public void deleteComment(Long commentId, String email) { // [변경] Long authorId -> String email
+        User user = findLoginUser(email); // [변경]
         Comment comment = findComment(commentId);
-        validateAuthor(comment.getAuthorId(), authorId);
+
+        validateAuthor(comment.getUser().getId(), user.getId()); // [변경] comment.getAuthorId() -> comment.getUser().getId()
 
         commentRepository.delete(comment);
     }
@@ -151,10 +131,26 @@ public class CommentService {
     }
 
     /*
-     * 작성자 검증 공통 메서드
+     * [변경]
+     * JWT Filter에서 Authentication principal로 저장한 email을 기준으로
+     * 실제 User 엔티티를 조회한다.
      */
-    private void validateAuthor(Long commentAuthorId, Long currentAuthorId) {
-        if (!commentAuthorId.equals(currentAuthorId)) {
+    private User findLoginUser(String email) {
+        if (email == null || email.isBlank()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_REQUEST);
+        }
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FORBIDDEN_REQUEST));
+    }
+
+    /*
+     * [변경]
+     * 기존 authorId 비교는 유지하되,
+     * 값의 출처가 Comment.user.id / 로그인 User.id 로 변경됨.
+     */
+    private void validateAuthor(Long commentAuthorId, Long currentUserId) {
+        if (!commentAuthorId.equals(currentUserId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN_REQUEST);
         }
     }

@@ -23,15 +23,22 @@ const Needle = ({score, cx, cy, innerRadius, outerRadius }: NeedleProps & PieSec
         <g>
             {/* 바늘 삼각형 */}
             <polygon
-                points={`${needleBaseCenterX + needleLength * 0.5}, ${needleBaseCenterY}, ${needleBaseCenterX},${needleBaseCenterY - NEEDLE_BASE_RADIUS_PX}, ${needleBaseCenterX},${needleBaseCenterY + NEEDLE_BASE_RADIUS_PX}`}
+                points={`
+                    ${needleBaseCenterX + needleLength * 0.5},${needleBaseCenterY - 2}
+                    ${needleBaseCenterX},${needleBaseCenterY - NEEDLE_BASE_RADIUS_PX - 2}
+                    ${needleBaseCenterX},${needleBaseCenterY + NEEDLE_BASE_RADIUS_PX - 2}
+                `}
                 fill={NEEDLE_COLOR}
-                style={{transform: `rotate(-${angle}deg)`, transformOrigin: `${needleBaseCenterX}px ${needleBaseCenterY}px`,}}
+                style={{
+                    transform: `rotate(-${angle}deg)`,
+                    transformOrigin: `${needleBaseCenterX}px ${needleBaseCenterY - 2}px`,
+                }}
             />
 
             {/* 중심 원 */}
             <circle
                 cx={needleBaseCenterX}
-                cy={needleBaseCenterY}
+                cy={needleBaseCenterY - 2}
                 r={NEEDLE_BASE_RADIUS_PX}
                 fill={NEEDLE_COLOR}
             />
@@ -58,7 +65,7 @@ const HalfPie = (props: PieProps) => (
 
 export default function PieChartWithNeedle({score, isAnimationActive = false }: { score:number, isAnimationActive?: boolean }) {
     return (
-        <PieChart width={210} height={120}>
+        <PieChart width={210} height={112}>
             <HalfPie isAnimationActive={isAnimationActive} />
             <HalfPie isAnimationActive={isAnimationActive} shape={(props) => <Needle {...props} score={score} />} />
             <Tooltip defaultIndex={0} content={() => null} active />

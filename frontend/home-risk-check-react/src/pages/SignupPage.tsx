@@ -7,8 +7,10 @@ import {cn} from '@/lib/utils'
 import {useMemo, useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useNavigate} from 'react-router-dom'
-import {signupStore} from '@/store/signupStore'
-import axios from 'axios'
+import {signupStore} from '@/features/auth/stores/signupStore'
+import {ROUTES} from '@/constants/routes'
+// import {authApi} from '@/features/auth/api' // 백엔드 연동 시 활성화
+import {normalizeApiError} from '@/lib/api-response'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -31,20 +33,23 @@ const getColor = (score: number) => {
 
 export default function SignupPage() {
     const navigate = useNavigate()
-    const {nickname, setNickname, email, setEmail, isEmailVerified, setIsEmailVerified, password, setPassword, reset } = signupStore()
+    const {nickname, setNickname, email, setEmail, isNicknameChecked, setIsNicknameChecked, isEmailVerified, setIsEmailVerified, password, setPassword, reset } = signupStore()
     const [formErrors, setFormErrors] = useState({nickname: '', email: '', password: ''})
     const [isVisible, setIsVisible] = useState(false)
-    const [isNicknameChecked, setIsNicknameChecked] = useState(false)
     const toggleVisibility = () => setIsVisible(prevState => !prevState)
 
-    const strength = passwordRegex.map(req => ({
-        met: req.regex.test(password),
-        text: req.text
-    }))
+    const strength = useMemo(
+        () => passwordRegex.map(req => ({
+            met: req.regex.test(password),
+            text: req.text,
+        })),
+        [password],
+    )
 
-    const strengthScore = useMemo(() => {
-        return strength.filter(req => req.met).length
-    }, [strength])
+    const strengthScore = useMemo(
+        () => strength.filter(req => req.met).length,
+        [strength],
+    )
 
     const sendEmailCode = async () => {
         if (!email) {
@@ -62,8 +67,8 @@ export default function SignupPage() {
             }))
             return
         }
-        // await axios.post('/api/auth/send-code', { email })
-        navigate('/email-verify')
+        // await authApi.sendEmailCode(email)
+        navigate(ROUTES.emailVerify)
     }
 
     const checkNickname = async () => {
@@ -76,9 +81,9 @@ export default function SignupPage() {
         }
 
         try {
-            // await axios.get(`/api/auth/check-nickname, {nickname}`)
+            // await authApi.checkNickname(nickname)
             setIsNicknameChecked(true)
-        } catch (err){
+        } catch {
             setFormErrors(prev => ({
                 ...prev,
                 nickname: '이미 사용중인 닉네임이에요'
@@ -111,17 +116,15 @@ export default function SignupPage() {
         }
 
         try {
-            // await axios.post('/api/auth/signup', { nickname, email, password })
+            // await authApi.signup({ nickname, email, password })
             reset()
-            navigate('/login')
+            navigate(ROUTES.login)
         } catch (err) {
-            if (axios.isAxiosError(err)) {
-                const data = err.response?.data
-                if (data?.field === 'nickname') {
-                    setFormErrors(prev => ({...prev, nickname: '이미 사용 중인 닉네임이에요.'}))
-                } else {
-                    setFormErrors(prev => ({...prev, email: '이미 사용 중인 이메일이에요.'}))
-                }
+            const apiError = normalizeApiError(err)
+            if (apiError.field === 'nickname') {
+                setFormErrors(prev => ({...prev, nickname: apiError.message}))
+            } else {
+                setFormErrors(prev => ({...prev, email: apiError.message}))
             }
         }
     }
@@ -218,7 +221,7 @@ export default function SignupPage() {
                 회원가입
             </Button>
             <div className="text-center text-xs">
-                <span className="text-muted-foreground">이미 회원이신가요?&nbsp;<Link to="/login" className="underline">로그인</Link></span>
+                <span className="text-muted-foreground">이미 회원이신가요?&nbsp;<Link to={ROUTES.login} className="underline">로그인</Link></span>
             </div>
         </div>
     )

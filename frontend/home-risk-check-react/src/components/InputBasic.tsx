@@ -1,5 +1,3 @@
-'use client'
-
 import {useId, useRef} from 'react'
 import {CircleXIcon} from 'lucide-react'
 import {cn} from '@/lib/utils'
@@ -14,6 +12,7 @@ interface InputClearProps {
     error?: string
     value: string
     onChange: (value: string) => void
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
     className?: string
     addonButton?: AddonButton
 }
@@ -32,6 +31,7 @@ const InputBasic = ({
                         error,
                         value,
                         onChange,
+                        onKeyDown,
                         className,
                         addonButton
                     }: InputClearProps) => {
@@ -45,7 +45,11 @@ const InputBasic = ({
 
     return (
         <Field className="gap-2">
-            <FieldLabel id={id} className="font-medium text-xs">{label}</FieldLabel>
+            {label && (
+                <FieldLabel id={id} className="font-medium text-xs">
+                    {label}
+                </FieldLabel>
+            )}
             <InputGroup className={cn("h-12 bg-gray-100 border-none rounded-xl", className)}>
                 <InputGroupInput id={id} readOnly={isReadOnly}
                                  ref={inputRef}
@@ -53,6 +57,7 @@ const InputBasic = ({
                                  placeholder={placeholder}
                                  value={value}
                                  onChange={e => onChange(e.target.value)}
+                                 onKeyDown={onKeyDown}
                 />
                 <InputGroupAddon align="inline-end" className="gap-0">
                     {value && isClearable && (
@@ -71,7 +76,9 @@ const InputBasic = ({
                     )}
                 </InputGroupAddon>
             </InputGroup>
-            <FieldDescription className="text-xs text-red-700">{error}</FieldDescription>
+            {error && (
+                <FieldDescription className="text-xs text-red-700">{error}</FieldDescription>
+            )}
         </Field>
     )
 }

@@ -14,6 +14,11 @@
 
 [변경 이력]
 - import를 risk_calculator.build_features_from_sources로 변경 (피처 단일 소스)
+- [NEW] 하이브리드 판정: calculate_hybrid_score() 사용으로 전환
+  - 기존: predict_with_model() → determine_risk_level(prob)
+  - 변경: calculate_hybrid_score(features) → 룰 60% + ML 40% 결합 점수
+- [NEW] estimate_market_price 호출 시 building_type 전달
+  - 공시가 fallback 시 국토부 현실화율 기반 유형별 배수 적용
 """
 import logging
 from datetime import datetime
@@ -36,9 +41,8 @@ from app.services.price_service import (
     calculate_hug_eligibility
 )
 from app.services.risk_calculator import (
-    build_features_from_sources,  # 변경: calculate_risk_features → build_features_from_sources
-    predict_with_model,
-    determine_risk_level,
+    build_features_from_sources,
+    calculate_hybrid_score,       # [NEW] 하이브리드 판정
     analyze_risk_factors,
     generate_recommendations
 )
@@ -91,11 +95,14 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
         if not building_info:
             return {"error": "건물 정보를 찾을 수 없습니다"}
 
-        # 4. 시세 조회
+        # 4. 시세 조회 [변경: building_type 전달]
         pnu_for_price = building_info.get('unique_number') or pnu
         area_size = building_info.get('exclusive_area')
 
-        market_price, price_source = estimate_market_price(pnu_for_price, area_size)
+        market_price, price_source = estimate_market_price(
+            pnu_for_price, area_size,
+            building_type=building_info.get('main_use', '')
+        )
 
         if market_price <= 0:
             return {"error": "시세 정보를 찾을 수 없어 분석할 수 없습니다"}
@@ -114,10 +121,10 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
             building_info=building_info
         )
 
-        # 7. AI 예측
-        prob = predict_with_model(features)
-        risk_level = determine_risk_level(prob)
-        risk_score = round(prob * 100, 2)
+        # 7. [변경] 하이브리드 판정 (룰 베이스 60% + ML 40%)
+        hybrid = calculate_hybrid_score(features)
+        risk_level = hybrid["risk_level"]
+        risk_score = hybrid["final_score"]
 
         # 8. 결과 저장
         save_prediction_result(
@@ -127,7 +134,7 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
             features=features,
             risk_level=risk_level,
             risk_score=risk_score,
-            ai_prob=prob
+            ai_prob=hybrid["ml_score"] or 0.0
         )
 
         # 9. 응답 생성
@@ -142,6 +149,12 @@ def predict_risk(address: str, deposit_manwon: int) -> Dict[str, Any]:
                 "total_ratio": round(features.get('total_risk_ratio', 0) * 100, 1),
                 "is_trust": bool(features.get('is_trust_owner', 0)),
                 "is_short_term": bool(features.get('short_term_weight', 0) > 0)
+            },
+            # [NEW] 하이브리드 판정 상세
+            "scoring_detail": {
+                "rule_score": hybrid["rule_score"],
+                "ml_score": hybrid["ml_score"],
+                "weights": hybrid["weights"],
             }
         }
     except DatabaseConnectionError:
@@ -181,8 +194,11 @@ def predict_risk_with_ocr(
         pnu = ocr_features.get('unique_number', '')
         area_size = ocr_features.get('area_size')
 
-        # 2. 시세 조회
-        market_price, price_source = estimate_market_price(pnu, area_size)
+        # 2. 시세 조회 [변경: building_type 전달]
+        market_price, price_source = estimate_market_price(
+            pnu, area_size,
+            building_type=ocr_features.get('main_use', '')
+        )
 
         # 3. 공시지가 및 HUG 판단
         public_price = get_public_price(pnu, area_size)
@@ -211,9 +227,9 @@ def predict_risk_with_ocr(
         if public_price > 0:
             features['hug_risk_ratio'] = (deposit_manwon * 10000) / (public_price * 1.26)
 
-        # 5. AI 예측
-        prob = predict_with_model(features)
-        risk_level = determine_risk_level(prob)
+        # 5. [변경] 하이브리드 판정 (룰 베이스 60% + ML 40%)
+        hybrid = calculate_hybrid_score(features)
+        risk_level = hybrid["risk_level"]
 
         # 6. 위험 요인 분석
         risk_factors = analyze_risk_factors(features, is_hug_safe)
@@ -248,8 +264,8 @@ def predict_risk_with_ocr(
             market_price_manwon=market_price,
             features=features,
             risk_level=risk_level,
-            risk_score=round(prob * 100, 2),
-            ai_prob=prob
+            risk_score=hybrid["final_score"],
+            ai_prob=hybrid["ml_score"] or 0.0
         )
 
         # 10. 응답 생성
@@ -259,7 +275,7 @@ def predict_risk_with_ocr(
             "market_price": int(market_price * 10000),
             "price_source": price_source,
 
-            "risk_score": round(prob * 100, 1),
+            "risk_score": hybrid["final_score"],
             "risk_level": risk_level,
             "major_risk_factors": risk_factors,
 
@@ -275,6 +291,12 @@ def predict_risk_with_ocr(
             },
 
             "recommendations": recommendations,
+
+            "scoring_detail": {
+                "rule_score": hybrid["rule_score"],
+                "ml_score": hybrid["ml_score"],
+                "weights": hybrid["weights"],
+            },
 
             "_debug_info": {
                 "pnu": pnu,

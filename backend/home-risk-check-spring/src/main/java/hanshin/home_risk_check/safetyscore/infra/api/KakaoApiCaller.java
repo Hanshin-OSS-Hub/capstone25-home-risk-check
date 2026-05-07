@@ -21,10 +21,22 @@ public class KakaoApiCaller {
     @Value("${kakao.rest-api-key}")
     private String kakaoApiKey;
 
+    // 교통사고 다발지역 확인용 장소/키워드 검색
     private static final String KAKAO_LOCAL_KEYWORD_URL = "https://dapi.kakao.com/v2/local/search/keyword.json";
+    // 정확한 주소 검색용 (유저 입력 주소-> 행정동 추출용)
+    private static final String KAKAO_LOCAL_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json";
 
-    public KakaoApiResponse.KakaoDocument searchPlace(String keyword) {
-        RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public KakaoApiResponse.KakaoDocument searchPlace(String keyWord){
+        return requestKakaoApi(KAKAO_LOCAL_KEYWORD_URL, keyWord);
+    }
+
+    public KakaoApiResponse.KakaoDocument searchAddress(String address){
+        return requestKakaoApi(KAKAO_LOCAL_ADDRESS_URL, address);
+    }
+
+    public KakaoApiResponse.KakaoDocument requestKakaoApi(String url, String query) {
         try {
             //Kakao API : KakaoAK {REST_API_KEY} 들어가야함
             HttpHeaders headers = new HttpHeaders();
@@ -32,8 +44,8 @@ public class KakaoApiCaller {
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             // URL 생성
-            String uriString = UriComponentsBuilder.fromUriString(KAKAO_LOCAL_KEYWORD_URL)
-                    .queryParam("query", keyword)
+            String uriString = UriComponentsBuilder.fromUriString(url)
+                    .queryParam("query", query)
                     .queryParam("size", 1)
                     .build()
                     .toUriString();
@@ -55,9 +67,10 @@ public class KakaoApiCaller {
             }
 
         } catch (Exception e) {
-            log.error("카카오 로컬 API 호출 중 오류 발생. 검색어: {}", keyword, e);
+            log.error("카카오 로컬 API 호출 중 오류 발생. 검색어: {}", query, e);
         }
 
         return null;
     }
+
 }

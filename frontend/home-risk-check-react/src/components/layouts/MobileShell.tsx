@@ -6,7 +6,11 @@ export function MobileShell() {
     return (
         <div className="flex flex-col h-dvh">
             <main className="flex-1 overflow-y-auto">
-                <Outlet />
+                <div className="px-4 my-6">
+                    <div className="flex flex-col gap-6 max-w-(--breakpoint-sm) mx-auto w-full">
+                        <Outlet />
+                    </div>
+                </div>
             </main>
             {/*<BottomTabBar />*/}
         </div>

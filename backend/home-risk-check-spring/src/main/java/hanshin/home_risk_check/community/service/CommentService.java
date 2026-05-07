@@ -8,13 +8,15 @@ import hanshin.home_risk_check.community.repository.CommentRepository;
 import hanshin.home_risk_check.community.repository.PostRepository;
 import hanshin.home_risk_check.global.exception.BusinessException;
 import hanshin.home_risk_check.global.exception.ErrorCode;
-import hanshin.home_risk_check.user.entity.User; // [변경] 작성자 User 사용
-import hanshin.home_risk_check.user.repository.UserRepository; // [변경] email로 User 조회
+import hanshin.home_risk_check.user.entity.User;
+import hanshin.home_risk_check.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /*
  * 댓글 Service
@@ -29,16 +31,20 @@ public class CommentService {
     private final UserRepository userRepository; // [변경] 로그인 사용자 조회용 Repository 추가
 
     /*
-     * 특정 게시글의 댓글 목록 조회
+     * 특정 게시글의 댓글 목록 조회 (페이지네이션)
+     * 정렬: rootComment.commentId ASC, depth ASC, createdAt ASC
      */
-    public List<CommentResponse> getComments(Long postId) {
+    public Page<CommentResponse> getComments(Long postId, int page, int size) {
         validatePostExists(postId);
 
-        return commentRepository
-                .findAllByPost_PostIdOrderByRootComment_CommentIdAscDepthAscCreatedAtAsc(postId)
-                .stream()
-                .map(CommentResponse::from)
-                .toList();
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.asc("rootComment.commentId"),
+                Sort.Order.asc("depth"),
+                Sort.Order.asc("createdAt")
+        ));
+
+        return commentRepository.findByPost_PostId(postId, pageable)
+                .map(CommentResponse::from);
     }
 
     /*

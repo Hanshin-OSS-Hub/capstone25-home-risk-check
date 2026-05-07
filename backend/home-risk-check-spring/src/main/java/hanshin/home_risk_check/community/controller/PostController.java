@@ -7,11 +7,12 @@ import hanshin.home_risk_check.community.dto.PostUpdateRequest;
 import hanshin.home_risk_check.community.service.PostImageService;
 import hanshin.home_risk_check.community.service.PostService;
 import hanshin.home_risk_check.global.dto.ApiResponse;
-import jakarta.validation.Valid; // [변경] DTO Bean Validation 적용을 위해 추가
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.annotation.AuthenticationPrincipal; // [변경] 현재 로그인 사용자 이메일 주입을 위해 추가
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,17 +44,13 @@ public class PostController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<PostResponse> createPost(
-            @AuthenticationPrincipal String email, // [변경] JWT Filter에서 principal로 넣은 email 사용
-            @Valid @RequestBody PostCreateRequest request // [변경] DTO Validation 적용
+            @AuthenticationPrincipal String email,
+            @Valid @RequestBody PostCreateRequest request
     ) {
-        /*
-         * [변경]
-         * 기존 Long authorId = 1L 제거
-         * Service에서 email로 User를 조회해 작성자로 사용
-         */
         return ApiResponse.success(
-                201,
+                HttpStatus.CREATED.value(),
                 "게시글 작성 성공",
                 postService.createPost(email, request)
         );
@@ -62,13 +59,9 @@ public class PostController {
     @PatchMapping("/{postId}")
     public ApiResponse<PostResponse> updatePost(
             @PathVariable Long postId,
-            @AuthenticationPrincipal String email, // [변경]
-            @Valid @RequestBody PostUpdateRequest request // [변경] DTO Validation 적용
+            @AuthenticationPrincipal String email,
+            @Valid @RequestBody PostUpdateRequest request
     ) {
-        /*
-         * [변경]
-         * 기존 Long authorId = 1L 제거
-         */
         return ApiResponse.success(
                 postService.updatePost(postId, email, request)
         );
@@ -77,15 +70,10 @@ public class PostController {
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> deletePost(
             @PathVariable Long postId,
-            @AuthenticationPrincipal String email // [변경]
+            @AuthenticationPrincipal String email
     ) {
-        /*
-         * [변경]
-         * 기존 Long authorId = 1L 제거
-         */
         postService.deletePost(postId, email);
-
-        return ApiResponse.success(200, "게시글 삭제 성공", null);
+        return ApiResponse.success(HttpStatus.OK.value(), "게시글 삭제 성공", null);
     }
 
     /*
@@ -93,12 +81,13 @@ public class PostController {
      * 게시글 1개당 최대 10장
      */
     @PostMapping(value = "/{postId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<List<PostImageResponse>> uploadPostImages(
             @PathVariable Long postId,
             @RequestPart("images") List<MultipartFile> images
     ) {
         return ApiResponse.success(
-                201,
+                HttpStatus.CREATED.value(),
                 "게시글 이미지 업로드 성공",
                 postImageService.uploadPostImages(postId, images)
         );
@@ -121,7 +110,6 @@ public class PostController {
             @PathVariable Long postImageId
     ) {
         postImageService.deletePostImage(postId, postImageId);
-
-        return ApiResponse.success(200, "게시글 이미지 삭제 성공", null);
+        return ApiResponse.success(HttpStatus.OK.value(), "게시글 이미지 삭제 성공", null);
     }
 }

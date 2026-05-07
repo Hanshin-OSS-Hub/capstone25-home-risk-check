@@ -6,10 +6,10 @@ import hanshin.home_risk_check.community.service.CommentService;
 import hanshin.home_risk_check.global.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal; // [변경] 현재 로그인 사용자 이메일 주입을 위해 추가
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /*
  * 댓글 Controller
@@ -22,12 +22,16 @@ public class CommentController {
     private final CommentService commentService;
 
     /*
-     * 댓글 목록 조회
-     * GET /api/posts/{postId}/comments
+     * 댓글 목록 조회 (pagination)
+     * GET /api/posts/{postId}/comments?page=0&size=20
      */
     @GetMapping("/posts/{postId}/comments")
-    public ApiResponse<List<CommentResponse>> getComments(@PathVariable Long postId) {
-        return ApiResponse.success(commentService.getComments(postId));
+    public ApiResponse<Page<CommentResponse>> getComments(
+            @PathVariable Long postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.success(commentService.getComments(postId, page, size));
     }
 
     /*
@@ -35,18 +39,14 @@ public class CommentController {
      * POST /api/posts/{postId}/comments
      */
     @PostMapping("/posts/{postId}/comments")
+    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CommentResponse> createComment(
             @PathVariable Long postId,
-            @AuthenticationPrincipal String email, // [변경] JWT Filter에서 principal로 넣은 email 사용
+            @AuthenticationPrincipal String email,
             @Valid @RequestBody CommentCreateRequest request
     ) {
-        /*
-         * [변경]
-         * 기존 Long authorId = 1L 제거
-         * Service에서 email로 User를 조회해 작성자로 사용
-         */
         return ApiResponse.success(
-                201,
+                HttpStatus.CREATED.value(),
                 "댓글 작성 성공",
                 commentService.createComment(postId, email, request)
         );
@@ -59,14 +59,9 @@ public class CommentController {
     @DeleteMapping("/comments/{commentId}")
     public ApiResponse<Void> deleteComment(
             @PathVariable Long commentId,
-            @AuthenticationPrincipal String email // [변경]
+            @AuthenticationPrincipal String email
     ) {
-        /*
-         * [변경]
-         * 기존 Long authorId = 1L 제거
-         */
         commentService.deleteComment(commentId, email);
-
-        return ApiResponse.success(200, "댓글 삭제 성공", null);
+        return ApiResponse.success(HttpStatus.OK.value(), "댓글 삭제 성공", null);
     }
 }

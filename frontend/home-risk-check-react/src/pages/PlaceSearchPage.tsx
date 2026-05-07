@@ -7,12 +7,13 @@ import mapPinMarker from '@/assets/mapPinMarker.png'
 
 export default function PlaceSearchPage() {
     const [address, setAddress] = useState('')
-    const [placeResponse, setPlaceResponse] = useState<any[]>([])
-    const {setPlaceLat, setPlaceLng} = communityCreateStore()
+    const [placeResponse, setPlaceResponse] = useState<kakao.maps.services.Place[]>([])
+    const setPlaceLat = communityCreateStore(s => s.setPlaceLat)
+    const setPlaceLng = communityCreateStore(s => s.setPlaceLng)
     const navigate = useNavigate()
     const location = useLocation()
     const mapRef = useRef<HTMLDivElement>(null)
-    const mapInstance = useRef<any>(null);
+    const mapInstance = useRef<kakao.maps.Map | null>(null);
     const [showGuide, setShowGuide] = useState(true);
     const [opacity, setOpacity] = useState(true);
 
@@ -34,7 +35,7 @@ export default function PlaceSearchPage() {
 
     // ① 지도 초기화 — 마운트 시 1회만
     useEffect(() => {
-        const kakao = (window as any).kakao;
+        const { kakao } = window;
         if (mapInstance.current) return;
 
         const map = new kakao.maps.Map(mapRef.current, {
@@ -51,7 +52,7 @@ export default function PlaceSearchPage() {
         );
 
         const ps = new kakao.maps.services.Places(map);
-        let markers: any[] = [];
+        let markers: kakao.maps.Marker[] = [];
         let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
         const clearMarkers = () => {
@@ -59,16 +60,16 @@ export default function PlaceSearchPage() {
             markers = [];
         };
 
-        const displayMarker = (place: any) => {
+        const displayMarker = (place: kakao.maps.services.Place) => {
             const marker = new kakao.maps.Marker({
                 map,
-                position: new kakao.maps.LatLng(place.y, place.x),
+                position: new kakao.maps.LatLng(Number(place.y), Number(place.x)),
                 image: markerImage,
             });
             markers.push(marker);
         };
 
-        const isValidPlace = (place: any) => {
+        const isValidPlace = (place: kakao.maps.services.Place) => {
             const category = place.category_name;
             return (
                 (category.includes("부동산 > 주거시설 > 아파트") && !category.includes("아파트 동")) ||
@@ -80,9 +81,9 @@ export default function PlaceSearchPage() {
         const searchPlaces = () => {
             clearMarkers();
 
-            ps.keywordSearch("주거시설", (data: any, status: any) => {
+            ps.keywordSearch("주거시설", (data, status) => {
                 if (status !== kakao.maps.services.Status.OK) {
-                    setPlaceResponse([]); // 실패 시에만 초기화
+                    setPlaceResponse([]);
                     return;
                 }
                 const valid = data.filter(isValidPlace);
@@ -113,13 +114,13 @@ export default function PlaceSearchPage() {
     useEffect(() => {
         if (!address || !mapInstance.current) return;
 
-        const kakao = (window as any).kakao;
+        const { kakao } = window;
         const geocoder = new kakao.maps.services.Geocoder();
 
-        geocoder.addressSearch(address, (result: any, status: any) => {
-            if (status === kakao.maps.services.Status.OK) {
-                const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-                mapInstance.current.setCenter(coords);
+        geocoder.addressSearch(address, (result, status) => {
+            if (status === kakao.maps.services.Status.OK && result[0]) {
+                const coords = new kakao.maps.LatLng(Number(result[0].y), Number(result[0].x));
+                mapInstance.current?.setCenter(coords);
             }
         });
     }, [address]); // ← address만 의존
@@ -153,13 +154,13 @@ export default function PlaceSearchPage() {
                             key={item.id}
                             className="p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
                             onMouseEnter={() => {
-                                const kakao = (window as any).kakao;
-                                const coords = new kakao.maps.LatLng(item.y, item.x);
+                                const { kakao } = window;
+                                const coords = new kakao.maps.LatLng(Number(item.y), Number(item.x));
                                 mapInstance.current?.setCenter(coords);
                             }}
                             onClick={() => {
-                                setPlaceLat(item.y);
-                                setPlaceLng(item.x);
+                                setPlaceLat(Number(item.y));
+                                setPlaceLng(Number(item.x));
                                 navigate(ROUTES.communityNew);
                             }}
                         >

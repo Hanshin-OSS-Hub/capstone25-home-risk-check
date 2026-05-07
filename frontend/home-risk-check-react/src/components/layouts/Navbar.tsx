@@ -16,9 +16,11 @@ const Navbar = () => {
                     <NavMenu className="hidden md:block" />
 
                     <div className="flex items-center gap-3">
-                        <Button className="rounded-xl cursor-pointer">
-                            <Link to={ROUTES.signup}>회원가입</Link>
-                        </Button>
+                        <Link to={ROUTES.signup}>
+                            <Button className="rounded-xl cursor-pointer">
+                                회원가입
+                            </Button>
+                        </Link>
 
                         {/* Mobile Menu */}
                         <div className="md:hidden">

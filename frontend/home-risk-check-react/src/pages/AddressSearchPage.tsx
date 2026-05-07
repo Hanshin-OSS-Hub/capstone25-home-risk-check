@@ -1,75 +1,15 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import InputBasic from "@/components/InputBasic.tsx"
-import { useAddressSearch } from "@/features/address/hooks/useAddressSearch"
-import { useDebouncedValue } from "@/hooks/use-debounced-value"
+import AddressSearchTip from "@/features/address/components/AddressSearchTip"
+import AddressSearchResults from "@/features/address/components/AddressSearchResults"
 import type { JusoItem } from "@/features/address/types"
-import { showToast } from "@/lib/notify.ts"
+import { validateKeyword } from "@/features/address/utils/validateKeyword.ts"
 
 export default function AddressSearchPage() {
     const [keyword, setKeyword] = useState("")
-    const debouncedKeyword = useDebouncedValue(keyword, 300)
     const navigate = useNavigate()
     const location = useLocation()
-    const observerRef = useRef<HTMLDivElement | null>(null)
-
-    const validateKeyword = (value: string): string => {
-        if (!value) return value
-
-        const specialRegex = /[%=><]/g
-        if (specialRegex.test(value)) {
-            showToast({ message: "% = > < 와 같은 특수문자는 사용할 수 없습니다." })
-            return value.replace(specialRegex, "")
-        }
-
-        const sqlKeywords = [
-            "OR", "SELECT", "INSERT", "DELETE",
-            "UPDATE", "CREATE", "DROP", "EXEC",
-            "UNION", "FETCH", "DECLARE", "TRUNCATE"
-        ]
-
-        let filtered = value
-
-        for (const word of sqlKeywords) {
-            if (new RegExp(word, "gi").test(filtered)) {
-                showToast({ message: `${word}와(과) 같은 문자는 사용할 수 없습니다.` })
-                filtered = filtered.replace(new RegExp(word, "gi"), "")
-                break
-            }
-        }
-        return filtered
-    }
-
-    const {
-        data,
-        fetchNextPage,
-        hasNextPage,
-        isFetching,
-        isFetchingNextPage,
-    } = useAddressSearch(debouncedKeyword)
-
-    const results = data?.pages.flatMap((page) => page.list) ?? []
-
-    useEffect(() => {
-        if (!observerRef.current) return
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (
-                    entries[0].isIntersecting &&
-                    hasNextPage &&
-                    !isFetchingNextPage
-                ) {
-                    void fetchNextPage()
-                }
-            },
-            {threshold: 1 }
-        )
-
-        observer.observe(observerRef.current)
-
-        return () => observer.disconnect()
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     const handleSelectAddress = (item: JusoItem) => {
         const from = (location.state as { from?: string } | null)?.from
@@ -91,63 +31,11 @@ export default function AddressSearchPage() {
                 isClearable={true}
             />
 
-            {/* 검색 팁 */}
-            {!keyword && (
-                <div className="flex flex-col gap-2">
-                    <span className="font-bold">Tip</span>
-                    <span className="mb-4 text-sm text-gray-500">
-                            아래와 같은 조합으로 검색하면 더 정확합니다
-                        </span>
-                    <span>도로명 + 건물번호</span>
-                    <span className="text-blue-500">예) 판교역로 166</span>
-                    <span>지역명 + 번지</span>
-                    <span className="text-blue-500">예) 백현동 532</span>
-                    <span>건물명</span>
-                    <span className="text-blue-500">예) 분당 주공</span>
-                </div>
+            {!keyword ? (
+                <AddressSearchTip />
+            ) : (
+                <AddressSearchResults keyword={keyword} onSelect={handleSelectAddress} />
             )}
-
-            {/* 최초 로딩 */}
-            {isFetching && results.length === 0 && (
-                <p className="text-center py-6 text-gray-400">
-                    검색 중...
-                </p>
-            )}
-
-            {/* 결과 없음 */}
-            {!isFetching && results.length === 0 && keyword && (
-                <p className="text-center py-6 text-gray-400">
-                    검색 결과가 없습니다
-                </p>
-            )}
-
-            {/* 결과 리스트 */}
-            <div className="divide-y">
-                {results.map((item, idx) => (
-                    <div
-                        key={`${item.roadAddr}-${idx}`}
-                        onClick={() => handleSelectAddress(item)}
-                        className="p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
-                    >
-                        <p className="font-medium text-sm">
-                            {item.roadAddr}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            {item.jibunAddr}
-                        </p>
-                    </div>
-                ))}
-            </div>
-
-            {/* 추가 로딩 */}
-            {isFetchingNextPage && (
-                <p className="text-center py-4 text-gray-400">
-                    더 불러오는 중...
-                </p>
-            )}
-
-            {/* 무한스크롤 트리거 */}
-            <div ref={observerRef} className="h-10" />
         </>
     )
 }

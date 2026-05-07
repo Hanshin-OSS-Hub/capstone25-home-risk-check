@@ -3,15 +3,12 @@ import {Button} from "@/components/ui/button.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
 import {communityCreateStore} from "@/features/community/stores/communityCreateStore";
 import {usePollDraft} from "@/features/community/hooks/usePollDraft";
-import {useNavigate, useLocation} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 
 export default function PollCreatePage() {
     const poll = communityCreateStore(s => s.poll)
+    const { draft: localPoll, setDraft: setLocalPoll, commit } = usePollDraft({ initial: poll })
     const navigate = useNavigate()
-    const { state } = useLocation()
-    const isNew = !!(state as { isNew?: boolean } | null)?.isNew
-
-    const { draft: localPoll, setDraft: setLocalPoll, commit } = usePollDraft({ initial: poll, isNew })
 
     const updateOption = (id: string, text: string) => {
         if (!localPoll) return

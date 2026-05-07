@@ -1,4 +1,4 @@
-import { queryClient } from '@/app/providers/QueryProvider'
+import { queryClient } from '@/lib/queryClient'
 import { router } from '@/routes/router'
 import { ROUTES } from '@/constants/routes'
 import { authKeys } from '@/features/auth/queryKeys'

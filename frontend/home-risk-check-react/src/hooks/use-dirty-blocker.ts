@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useBlocker } from 'react-router-dom'
 import { showToast } from '@/lib/notify.ts'
 
@@ -27,6 +27,9 @@ export function useDirtyBlocker({
         !allowPaths.some(p => nextLocation.pathname.startsWith(p)),
     )
 
+    const onLeaveRef = useRef(onLeave)
+    onLeaveRef.current = onLeave
+
     useEffect(() => {
         if (blocker.state !== 'blocked') return
         showToast({
@@ -34,10 +37,10 @@ export function useDirtyBlocker({
             actionLabel: '나가기',
             cancelLabel: '취소',
             onConfirm: () => {
-                onLeave?.()
+                onLeaveRef.current?.()
                 blocker.proceed()
             },
             onCancel: () => blocker.reset(),
         })
-    }, [blocker, message, onLeave])
+    }, [blocker, message])
 }

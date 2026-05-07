@@ -67,17 +67,24 @@ export default function AnalysisPage() {
                 address, detailAddress, deposit, registryFiles, buildingFiles,
                 signal: abortControllerRef.current.signal,
             })
-            navigate(ROUTES.analysisResult(data.id as number), { state: { result: data } })
+            navigate(ROUTES.analysisResult(data.task_id), { state: { result: data } })
         } catch (err) {
             if (isCanceledApiError(err)) return
         }
+    }
+
+    const addDepositAmount = (amount: number) => {
+        setDeposit(prev => {
+            const current = Number(prev || '0')
+            return String(current + amount)
+        })
     }
 
     return (
         <>
             <h1 className="font-medium">분석에 필요한 <br/> 정보를 입력해주세요</h1>
             <Card className="p-4 rounded-xl bg-sky-50 ring-0 gap-2">
-                <CardTitle className="text-sm text-blue-500">분석을 시작하기 전에 확인해주세요!</CardTitle>
+                <CardTitle className="text-sm text-blue-600">분석을 시작하기 전에 확인해주세요!</CardTitle>
                 <CardContent className="p-0">
                     <ul className="space-y-2">
                         {[
@@ -86,8 +93,10 @@ export default function AnalysisPage() {
                             "정확한 분석을 위해 최신 등기부등본과 건축물대장을 업로드해주세요.",
                             "서비스 이용 과정에서 발생하는 판단 및 선택의 책임은 사용자에게 있어요.",
                         ].map((text) => (
-                            <li key={text}
-                                className="flex items-start gap-2 text-xs text-muted-foreground list-none">
+                            <li
+                                key={text}
+                                className="flex items-start gap-2 text-xs text-muted-foreground list-none"
+                            >
                                 <span className="mt-1.5 w-1 h-1 rounded-full bg-muted-foreground shrink-0"/>
                                 <span>{text}</span>
                             </li>
@@ -116,6 +125,31 @@ export default function AnalysisPage() {
             <p className="flex items-center text-sm bg-gray-100 px-4 py-2 h-12 rounded-xl text-muted-foreground -mt-4">
                 {formatKoreanCurrency(deposit)}
             </p>
+            <div className="flex gap-1 -mt-4">
+                <Button
+                    size="xs"
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => addDepositAmount(1_000_000)}
+                >
+                    + 1백만
+                </Button>
+
+                <Button
+                    size="xs"
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => addDepositAmount(10_000_000)}
+                >
+                    + 1천만
+                </Button>
+
+                <Button
+                    size="xs"
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => addDepositAmount(100_000_000)}
+                >
+                    + 1억
+                </Button>
+            </div>
             <InputFile label="등기부등본" placeholder="파일을 드래그하거나 클릭하여 업로드해주세요"
                        fileIssueUrl="https://www.iros.go.kr/index.jsp" files={registryFiles}
                        onValueChange={setRegistryFiles}/>
@@ -125,7 +159,7 @@ export default function AnalysisPage() {
             <Button
                 onClick={handleAnalysisRequest}
                 disabled={analyze.isPending}
-                className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {analyze.isPending ? "분석 중..." : "분석하기"}
             </Button>

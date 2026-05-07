@@ -6,15 +6,13 @@ import hanshin.home_risk_check.community.service.CommentService;
 import hanshin.home_risk_check.global.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // [변경] 현재 로그인 사용자 이메일 주입을 위해 추가
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /*
  * 댓글 Controller
- *
- * 클라이언트의 HTTP 요청을 받아
- * 댓글 관련 Service로 전달하는 역할
  */
 @RestController
 @RequiredArgsConstructor
@@ -39,18 +37,18 @@ public class CommentController {
     @PostMapping("/posts/{postId}/comments")
     public ApiResponse<CommentResponse> createComment(
             @PathVariable Long postId,
+            @AuthenticationPrincipal String email, // [변경] JWT Filter에서 principal로 넣은 email 사용
             @Valid @RequestBody CommentCreateRequest request
     ) {
         /*
-         * 현재는 인증 미적용 상태라 임시 작성자 ID 사용
-         * 추후 JWT 붙이면 실제 로그인 사용자 ID로 교체
+         * [변경]
+         * 기존 Long authorId = 1L 제거
+         * Service에서 email로 User를 조회해 작성자로 사용
          */
-        Long authorId = 1L;
-
         return ApiResponse.success(
                 201,
                 "댓글 작성 성공",
-                commentService.createComment(postId, authorId, request)
+                commentService.createComment(postId, email, request)
         );
     }
 
@@ -59,10 +57,15 @@ public class CommentController {
      * DELETE /api/comments/{commentId}
      */
     @DeleteMapping("/comments/{commentId}")
-    public ApiResponse<Void> deleteComment(@PathVariable Long commentId) {
-        Long authorId = 1L;
-
-        commentService.deleteComment(commentId, authorId);
+    public ApiResponse<Void> deleteComment(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal String email // [변경]
+    ) {
+        /*
+         * [변경]
+         * 기존 Long authorId = 1L 제거
+         */
+        commentService.deleteComment(commentId, email);
 
         return ApiResponse.success(200, "댓글 삭제 성공", null);
     }

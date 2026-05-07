@@ -7,9 +7,11 @@ import hanshin.home_risk_check.community.dto.PostUpdateRequest;
 import hanshin.home_risk_check.community.service.PostImageService;
 import hanshin.home_risk_check.community.service.PostService;
 import hanshin.home_risk_check.global.dto.ApiResponse;
+import jakarta.validation.Valid; // [변경] DTO Bean Validation 적용을 위해 추가
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // [변경] 현재 로그인 사용자 이메일 주입을 위해 추가
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,9 +19,6 @@ import java.util.List;
 
 /*
  * 게시글 Controller
- *
- * 기존 게시글 CRUD는 그대로 두고,
- * 이미지 API만 따로 추가한다.
  */
 @RestController
 @RequiredArgsConstructor
@@ -44,33 +43,47 @@ public class PostController {
     }
 
     @PostMapping
-    public ApiResponse<PostResponse> createPost(@RequestBody PostCreateRequest request) {
-        Long authorId = 1L;
-
+    public ApiResponse<PostResponse> createPost(
+            @AuthenticationPrincipal String email, // [변경] JWT Filter에서 principal로 넣은 email 사용
+            @Valid @RequestBody PostCreateRequest request // [변경] DTO Validation 적용
+    ) {
+        /*
+         * [변경]
+         * 기존 Long authorId = 1L 제거
+         * Service에서 email로 User를 조회해 작성자로 사용
+         */
         return ApiResponse.success(
                 201,
                 "게시글 작성 성공",
-                postService.createPost(authorId, request)
+                postService.createPost(email, request)
         );
     }
 
     @PatchMapping("/{postId}")
     public ApiResponse<PostResponse> updatePost(
             @PathVariable Long postId,
-            @RequestBody PostUpdateRequest request
+            @AuthenticationPrincipal String email, // [변경]
+            @Valid @RequestBody PostUpdateRequest request // [변경] DTO Validation 적용
     ) {
-        Long authorId = 1L;
-
+        /*
+         * [변경]
+         * 기존 Long authorId = 1L 제거
+         */
         return ApiResponse.success(
-                postService.updatePost(postId, authorId, request)
+                postService.updatePost(postId, email, request)
         );
     }
 
     @DeleteMapping("/{postId}")
-    public ApiResponse<Void> deletePost(@PathVariable Long postId) {
-        Long authorId = 1L;
-
-        postService.deletePost(postId, authorId);
+    public ApiResponse<Void> deletePost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal String email // [변경]
+    ) {
+        /*
+         * [변경]
+         * 기존 Long authorId = 1L 제거
+         */
+        postService.deletePost(postId, email);
 
         return ApiResponse.success(200, "게시글 삭제 성공", null);
     }

@@ -30,7 +30,7 @@ public class PostResponse {
     public static PostResponse from(Post post) {
         return PostResponse.builder()
                 .postId(post.getPostId())
-                .authorId(post.getAuthorId())
+                .authorId(post.getUser().getId()) // [변경] post.getAuthorId() -> post.getUser().getId()
                 .categoryLabel(post.getCategoryLabel())
                 .title(post.getTitle())
                 .content(post.getContent())

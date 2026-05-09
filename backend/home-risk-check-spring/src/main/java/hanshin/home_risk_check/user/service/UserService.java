@@ -10,5 +10,8 @@ public interface UserService {
     LoginResponse login(LoginRequest request);
     UserResponse getUserById(Long id);
     UserResponse getUserByEmail(String email);
+    void updatePassword(Long id, String currentPassword, String newPassword);
+    void updateNickname(Long id, String newNickname);
+    void updateProfileImage(Long id, String newProfileImageUrl);
     void deleteUser(Long id);
 }

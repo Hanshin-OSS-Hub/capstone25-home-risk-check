@@ -3,7 +3,7 @@ package hanshin.home_risk_check.user.service;
 import hanshin.home_risk_check.global.exception.BusinessException;
 import hanshin.home_risk_check.global.exception.ErrorCode;
 import hanshin.home_risk_check.global.security.JwtUtil;
-import hanshin.home_risk_check.mapper.UserMapper;
+import hanshin.home_risk_check.user.mapper.UserMapper;
 import hanshin.home_risk_check.user.dto.LoginRequest;
 import hanshin.home_risk_check.user.dto.LoginResponse;
 import hanshin.home_risk_check.user.dto.SignupRequest;
@@ -20,7 +20,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Service
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService{
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -41,10 +44,20 @@ public class UserServiceImpl implements UserService{
     @Override
     @Transactional
     public UserResponse signup(SignupRequest request) {
-        User user = userMapper.toEntity(request);
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setProfileImageUrl(null);
-        user.setRole(Role.USER);
+        if (userRepository.existsByEmail(request.email())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+        if (userRepository.existsByNickname(request.nickname())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+
+        User user = User.builder()
+                .email(request.email())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .nickname(request.nickname())
+                .profileImageUrl(null)
+                .role(Role.USER)
+                .build();
         User saved = userRepository.save(user);
         return userMapper.from(saved);
     }
@@ -53,12 +66,10 @@ public class UserServiceImpl implements UserService{
     @Transactional
     public LoginResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
-        String accessToken  = jwtUtil.generateAccessToken(
-                userDetails.getUsername(), userDetails.getRole().name());
+        String accessToken  = jwtUtil.generateAccessToken(Objects.requireNonNull(userDetails).getUsername(), userDetails.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(userDetails.getUsername());
 
         //리프레시 토큰 저장 로직 필요
@@ -80,6 +91,44 @@ public class UserServiceImpl implements UserService{
                     .findByEmail(email)
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         return userMapper.from(user);
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(Long id, String currentPassword, String newPassword) {
+        User user = userRepository
+                    .findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        user.updatePassword(passwordEncoder.encode(newPassword));
+    }
+
+    @Override
+    @Transactional
+    public void updateNickname(Long id, String newNickname) {
+        if(userRepository.existsByNickname(newNickname)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+
+        User user = userRepository
+                    .findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateNickname(newNickname);
+    }
+
+    @Override
+    @Transactional
+    public void updateProfileImage(Long id, String newProfileImageUrl) {
+        User user = userRepository
+                    .findById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateProfileImage(newProfileImageUrl);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package hanshin.home_risk_check.mapper;
+package hanshin.home_risk_check.user.mapper;
 
 import hanshin.home_risk_check.user.dto.SignupRequest;
 import hanshin.home_risk_check.user.dto.UserResponse;

@@ -52,7 +52,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
-    implementation 'org.redisson:redisson:3.24.3'
+	implementation 'org.redisson:redisson-spring-boot-starter:3.52.0'
     implementation 'org.springframework.boot:spring-boot-starter-aop:3.4.3'
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
 }

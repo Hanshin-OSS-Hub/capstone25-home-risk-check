@@ -1,5 +1,7 @@
 package hanshin.home_risk_check.user.service;
 
+import hanshin.home_risk_check.global.exception.BusinessException;
+import hanshin.home_risk_check.global.exception.ErrorCode;
 import hanshin.home_risk_check.global.security.JwtUtil;
 import hanshin.home_risk_check.mapper.UserMapper;
 import hanshin.home_risk_check.user.dto.LoginRequest;
@@ -68,9 +70,7 @@ public class UserServiceImpl implements UserService{
     public UserResponse getUserById(Long id) {
         User user = userRepository
                     .findById(id)
-                    .orElseThrow(
-                            () -> new IllegalArgumentException("회원 정보 없음 : " + id)
-                    );
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         return userMapper.from(user);
     }
 
@@ -78,9 +78,7 @@ public class UserServiceImpl implements UserService{
     public UserResponse getUserByEmail(String email) {
         User user = userRepository
                     .findByEmail(email)
-                    .orElseThrow(
-                            () -> new IllegalArgumentException("회원 정보 없음 : " + email)
-                    );
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         return userMapper.from(user);
     }
 
@@ -88,7 +86,7 @@ public class UserServiceImpl implements UserService{
     @Transactional
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("회원 정보 없음 : " + id);
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         userRepository.deleteById(id);
     }

@@ -1,4 +1,3 @@
-// store/useSignupStore.ts
 import { create } from 'zustand'
 
 interface SignupStore {
@@ -7,11 +6,13 @@ interface SignupStore {
     password : string
     isNicknameChecked: boolean
     isEmailVerified: boolean
+
     setNickname : (nickname: string) => void
     setEmail: (email: string) => void
     setPassword : (password: string) => void
     setIsNicknameChecked: (v: boolean) => void
     setIsEmailVerified: (v: boolean) => void
+
     reset: () => void
 }
 
@@ -26,5 +27,11 @@ export const signupStore = create<SignupStore>((set) => ({
     setPassword: (password) => set({password}),
     setIsNicknameChecked: (v) => set({isNicknameChecked: v}),
     setIsEmailVerified: (v) => set({ isEmailVerified: v }),
-    reset: () => set({ email: '', isEmailVerified: false }),
+    reset: () => set({
+        nickname: '',
+        email: '',
+        password: '',
+        isNicknameChecked: false,
+        isEmailVerified: false,
+    }),
 }))

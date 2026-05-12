@@ -1,0 +1,42 @@
+export const mockComments = [
+    {
+        commentId: 1,
+        parentCommentId: null,
+        authorNickname: "바람이분당구",
+        content: "분당구에 바람이 많이 부는 이유는 지형적 요인 때문입니다.",
+        createdAt: "1시간전",
+        likes: 12,
+    },
+    {
+        commentId: 2,
+        parentCommentId: 1,
+        authorNickname: "판교러",
+        content: "동감이에요. 저도 항상 느꼈어요.",
+        createdAt: "30분전",
+        likes: 3,
+    },
+    {
+        commentId: 3,
+        parentCommentId: 1,
+        authorNickname: "성남시민",
+        content: "맞아요 특히 겨울에 심하죠.",
+        createdAt: "20분전",
+        likes: 1,
+    },
+    {
+        commentId: 4,
+        parentCommentId: null,
+        authorNickname: "정자동주민",
+        content: "산이 가까워서 그런 것 같아요.",
+        createdAt: "2시간전",
+        likes: 5,
+    },
+    {
+        commentId: 5,
+        parentCommentId: 4,
+        authorNickname: "수내동러",
+        content: "맞아요 바람길 영향도 있는 듯",
+        createdAt: "1시간전",
+        likes: 2,
+    },
+]

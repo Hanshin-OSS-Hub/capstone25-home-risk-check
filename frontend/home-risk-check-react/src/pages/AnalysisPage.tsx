@@ -4,7 +4,9 @@ import {Button} from '@/components/ui/button'
 import {Card, CardTitle, CardContent} from '@/components/ui/card'
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useLocation} from 'react-router-dom'
-import axios from 'axios'
+import {useAnalyze} from '@/features/analysis/hooks/useAnalyze'
+import {ROUTES} from '@/constants/routes'
+import {isCanceledApiError} from '@/lib/api-response'
 
 export default function AnalysisPage() {
     const [address, setAddress] = useState('')
@@ -12,18 +14,18 @@ export default function AnalysisPage() {
     const [deposit, setDeposit] = useState('')
     const [registryFiles, setRegistryFiles] = useState<File[]>([]); // 등기부등본
     const [buildingFiles, setBuildingFiles] = useState<File[]>([]); // 건축물대장
-    const [isLoading, setIsLoading] = useState(false)
     const navigate = useNavigate()
     const location = useLocation()
     const abortControllerRef = useRef<AbortController | null>(null)
+    const analyze = useAnalyze()
 
     useEffect(() => {
         if (location.state?.address) {
             setAddress(location.state.address)
-            // state 초기화
-            window.history.replaceState({}, document.title)
+            // router state 비우기 — 새로고침/뒤로가기 시 재주입 방지
+            navigate(location.pathname, { replace: true, state: null })
         }
-    }, [location.state])
+    }, [location.state, location.pathname, navigate])
 
     useEffect(() => {
         return () => {
@@ -60,42 +62,29 @@ export default function AnalysisPage() {
 
     const handleAnalysisRequest = async () => {
         abortControllerRef.current = new AbortController()
-        setIsLoading(true)
-
-        const formData = new FormData()
-
-        formData.append("address", address)
-        formData.append("detailAddress", detailAddress)
-        formData.append("deposit", deposit)
-
-        registryFiles.forEach((file) => {
-            formData.append("registryFiles", file)
-        })
-
-        buildingFiles.forEach((file) => {
-            formData.append("buildingFiles", file)
-        })
-
         try {
-            const res = await axios.post("/api/analyze", formData, {
-                headers: {"Content-Type": "multipart/form-data"},
+            const data = await analyze.mutateAsync({
+                address, detailAddress, deposit, registryFiles, buildingFiles,
                 signal: abortControllerRef.current.signal,
             })
-            // sessionStorage에 백업 저장
-            sessionStorage.setItem("analysisResult", JSON.stringify(res.data))
-            navigate("/analysis/result", {state: {result: res.data}})
+            navigate(ROUTES.analysisResult(data.task_id), { state: { result: data } })
         } catch (err) {
-            if (axios.isCancel(err)) return
-        } finally {
-            setIsLoading(false)
+            if (isCanceledApiError(err)) return
         }
+    }
+
+    const addDepositAmount = (amount: number) => {
+        setDeposit(prev => {
+            const current = Number(prev || '0')
+            return String(current + amount)
+        })
     }
 
     return (
         <>
             <h1 className="font-medium">분석에 필요한 <br/> 정보를 입력해주세요</h1>
             <Card className="p-4 rounded-xl bg-sky-50 ring-0 gap-2">
-                <CardTitle className="text-sm text-blue-500">분석을 시작하기 전에 확인해주세요!</CardTitle>
+                <CardTitle className="text-sm text-blue-600">분석을 시작하기 전에 확인해주세요!</CardTitle>
                 <CardContent className="p-0">
                     <ul className="space-y-2">
                         {[
@@ -104,8 +93,10 @@ export default function AnalysisPage() {
                             "정확한 분석을 위해 최신 등기부등본과 건축물대장을 업로드해주세요.",
                             "서비스 이용 과정에서 발생하는 판단 및 선택의 책임은 사용자에게 있어요.",
                         ].map((text) => (
-                            <li key={text}
-                                className="flex items-start gap-2 text-xs text-muted-foreground list-none">
+                            <li
+                                key={text}
+                                className="flex items-start gap-2 text-xs text-muted-foreground list-none"
+                            >
                                 <span className="mt-1.5 w-1 h-1 rounded-full bg-muted-foreground shrink-0"/>
                                 <span>{text}</span>
                             </li>
@@ -121,7 +112,7 @@ export default function AnalysisPage() {
                             isReadOnly={true}
                             addonButton={{
                                 label:"주소 검색",
-                                onClick :() => navigate("/address-search")
+                                onClick :() => navigate(ROUTES.addressSearch, {state: {from: location.pathname}})
                             }}
                 />
             </div>
@@ -134,6 +125,31 @@ export default function AnalysisPage() {
             <p className="flex items-center text-sm bg-gray-100 px-4 py-2 h-12 rounded-xl text-muted-foreground -mt-4">
                 {formatKoreanCurrency(deposit)}
             </p>
+            <div className="flex gap-1 -mt-4">
+                <Button
+                    size="xs"
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => addDepositAmount(1_000_000)}
+                >
+                    + 1백만
+                </Button>
+
+                <Button
+                    size="xs"
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => addDepositAmount(10_000_000)}
+                >
+                    + 1천만
+                </Button>
+
+                <Button
+                    size="xs"
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => addDepositAmount(100_000_000)}
+                >
+                    + 1억
+                </Button>
+            </div>
             <InputFile label="등기부등본" placeholder="파일을 드래그하거나 클릭하여 업로드해주세요"
                        fileIssueUrl="https://www.iros.go.kr/index.jsp" files={registryFiles}
                        onValueChange={setRegistryFiles}/>
@@ -142,10 +158,10 @@ export default function AnalysisPage() {
                        files={buildingFiles} onValueChange={setBuildingFiles}/>
             <Button
                 onClick={handleAnalysisRequest}
-                disabled={isLoading}
-                className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={analyze.isPending}
+                className="w-full h-12 text-white rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                {isLoading ? "분석 중..." : "분석하기"}
+                {analyze.isPending ? "분석 중..." : "분석하기"}
             </Button>
         </>
     )

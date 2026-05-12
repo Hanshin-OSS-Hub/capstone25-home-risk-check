@@ -1,14 +1,17 @@
 package hanshin.home_risk_check.global.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import org.springframework.beans.factory.annotation.Value;
 
 @Component
 public class JwtUtil {
@@ -19,8 +22,8 @@ public class JwtUtil {
     @Value("${jwt.public-key}")
     private RSAPublicKey publicKey;
 
-    private static final long ACCESS_TOKEN_EXPIRY  = 1000 * 60 * 30;
-    private static final long REFRESH_TOKEN_EXPIRY = 1000 * 60 * 60 * 24 * 7;
+    private static final long ACCESS_TOKEN_EXPIRY  = 1000L * 60 * 30;
+    private static final long REFRESH_TOKEN_EXPIRY = 1000L * 60 * 60 * 24 * 7;
 
     public String generateAccessToken(String email, String role) {
         return Jwts.builder()
@@ -54,15 +57,37 @@ public class JwtUtil {
     }
 
     public boolean isExpired(String token) {
-        return parseClaims(token).getExpiration().before(new Date());
+        try {
+            return parseClaims(token).getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
+    }
+
+    public TokenValidationResult validate(String token) {
+        try {
+            parseClaims(token);
+            return TokenValidationResult.VALID;
+        } catch (ExpiredJwtException e) {
+            return TokenValidationResult.EXPIRED;
+        } catch (SignatureException e) {
+            return TokenValidationResult.INVALID_SIGNATURE;
+        } catch (MalformedJwtException | UnsupportedJwtException e) {
+            return TokenValidationResult.MALFORMED;
+        } catch (JwtException | IllegalArgumentException e) {
+            return TokenValidationResult.INVALID;
+        }
     }
 
     public boolean validateToken(String token) {
-        try {
-            parseClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
+        return validate(token) == TokenValidationResult.VALID;
+    }
+
+    public enum TokenValidationResult {
+        VALID,
+        EXPIRED,
+        INVALID_SIGNATURE,
+        MALFORMED,
+        INVALID
     }
 }

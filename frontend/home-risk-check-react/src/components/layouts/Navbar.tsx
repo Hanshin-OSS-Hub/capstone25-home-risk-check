@@ -3,6 +3,7 @@ import { Logo } from "@/components/layouts/logo";
 import { NavMenu } from "@/components/layouts/NavMenu.tsx";
 import { NavigationSheet } from "@/components/layouts/NavigationSheet.tsx";
 import { Link } from "react-router-dom";
+import { ROUTES } from "@/constants/routes";
 
 const Navbar = () => {
     return (
@@ -15,9 +16,11 @@ const Navbar = () => {
                     <NavMenu className="hidden md:block" />
 
                     <div className="flex items-center gap-3">
-                        <Button className="rounded-xl cursor-pointer">
-                            <Link to="/signup">회원가입</Link>
-                        </Button>
+                        <Link to={ROUTES.signup}>
+                            <Button className="rounded-xl cursor-pointer">
+                                회원가입
+                            </Button>
+                        </Link>
 
                         {/* Mobile Menu */}
                         <div className="md:hidden">

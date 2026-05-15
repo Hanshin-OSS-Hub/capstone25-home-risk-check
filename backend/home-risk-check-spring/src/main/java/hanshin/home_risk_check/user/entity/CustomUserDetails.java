@@ -23,21 +23,22 @@ public class CustomUserDetails implements UserDetails {
         collection.add(new GrantedAuthority() {
             @Override
             public String getAuthority() {
-                return user.getRole().name();
+                return user.getRole().getValue();
             }
         });
         return collection;
     }
 
     @Override
-    public String getPassword() { return user.getPasswordHash(); }
-
-    @Override
     @NonNull
     public String getUsername() { return user.getEmail(); }
+
+    @Override
+    public String getPassword() { return user.getPasswordHash(); }
 
     public Long getUserId() { return user.getId(); }
     public String getEmail() { return user.getEmail(); }
     public String getNickname() { return user.getNickname(); }
-    public Role getRole() { return user.getRole(); }
+    public String getProfileImageUrl() { return user.getProfileImageUrl(); }
+    public String getRole() { return user.getRole().getValue(); }
 }

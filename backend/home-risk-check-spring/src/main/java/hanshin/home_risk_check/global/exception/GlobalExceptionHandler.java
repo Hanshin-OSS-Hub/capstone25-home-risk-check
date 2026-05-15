@@ -89,10 +89,10 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(errorCode.getCode(), errorCode.getMessage()));
     }
 
-    // 그 외 모든 예외 처리 (예상치 못한 서버 오류)
+    // 그 외 모든 예외 처리
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
-        log.error("예상치 못한 예외 발생", e);
+        log.error("예외 발생", e);
         ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
         return ResponseEntity
                 .status(errorCode.getHttpStatus())

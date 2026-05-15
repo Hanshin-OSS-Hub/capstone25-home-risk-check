@@ -1,6 +1,10 @@
 package hanshin.home_risk_check.user.dto;
 
-public record LoginResponse (
-    String accessToken,
-    String refreshToken
+import hanshin.home_risk_check.auth.dto.TokenResponse;
+
+public record LoginResponse  (
+    TokenResponse token,
+    String email,
+    String nickname,
+    String profileImageUrl
 ) {}

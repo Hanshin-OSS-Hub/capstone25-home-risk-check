@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -48,6 +50,10 @@ class SafetyScoreServiceTest {
     @Mock private FireStationRepository fireStationRepository;
     @Mock private TrafficRepository trafficRepository;
 
+    @Mock
+    private RedisTemplate<String, String> redisTemplate;
+    @Mock
+    private ValueOperations<String, String> valueOperations;
     @InjectMocks
     private SafetyScoreService safetyScoreService;
 
@@ -71,6 +77,8 @@ class SafetyScoreServiceTest {
         double mockLon = 127.108;
         String sgisCode = "41463102"; // 신갈동 행정동 코드
 
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("system:is_data_ready")).thenReturn("true");
         // [Mock] 카카오 API 가짜 응답
         KakaoApiResponse.KakaoDocument mockDoc = mock(KakaoApiResponse.KakaoDocument.class);
         KakaoApiResponse.AddressInfo mockAddressInfo = mock(KakaoApiResponse.AddressInfo.class);

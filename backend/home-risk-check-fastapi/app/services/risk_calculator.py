@@ -31,6 +31,9 @@ from app.services.feature_service import (
     TRAIN_FEATURES,
 )
 
+# HUG 정책 (적용일자 기반 배수 조회)
+from app.core.policy_config import get_hug_multiplier
+
 logger = logging.getLogger(__name__)
 
 # 프로젝트 루트
@@ -154,8 +157,11 @@ def build_features_from_sources(
     # --- 3. predict_service가 필요로 하는 추가 키 보강 ---
     # 공시가 기반 HUG 위험 비율 (실제 공시가가 있는 경우 덮어쓰기)
     if public_price_won > 0:
-        hug_limit_manwon = (public_price_won * 1.26) / 10000
-        features['_ref_hug_risk_ratio'] = deposit_manwon / hug_limit_manwon if hug_limit_manwon > 0 else 0
+        hug_multiplier, _ = get_hug_multiplier()
+        hug_limit_manwon = (public_price_won * hug_multiplier) / 10000
+        features['_ref_hug_risk_ratio'] = (
+            deposit_manwon / hug_limit_manwon if hug_limit_manwon > 0 else 0
+        )
 
     # predict_service에서 사용하는 레거시 키 호환
     # (analyze_risk_factors, API 응답 등에서 참조)

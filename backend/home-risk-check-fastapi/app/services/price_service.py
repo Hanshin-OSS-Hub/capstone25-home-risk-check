@@ -8,14 +8,13 @@
 - 시세 추정 로직
 
 [변경 이력]
-- [NEW] 공시가 → 시세 추정 시 국토부 현실화율 기반 유형별 배수 적용
-  - 기존: 일괄 × 1.26 (HUG 기준)
-  - 변경: 공동주택 × 1.449, 단독주택 × 1.866, 오피스텔 × 1.587
-  - 근거: 국토교통부 "부동산 공시가격 현실화 계획" (2020.11.03)
-         2023~2026년 4년 연속 동결 (2025.11.13 중앙부동산가격공시위원회 확인)
+- [REFACTOR] HUG·현실화 배수 외부화
+  - REALIZATION_MULTIPLIER, DEFAULT_MULTIPLIER, _get_realization_multiplier 제거
+  - calculate_hug_eligibility의 1.26 하드코딩 제거
+  - 모든 정책 조회를 app.core.policy_config로 위임 (적용일자 지원)
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Tuple, Optional
 
 from sqlalchemy import text
@@ -23,57 +22,16 @@ from sqlalchemy.exc import OperationalError
 
 from app.core import get_engine, is_db_available
 from app.core.exceptions import DatabaseConnectionError
+from app.core.policy_config import (
+    get_hug_multiplier,
+    get_realization_multiplier,
+)
 from app.services.address_service import parse_pnu, pnu_to_raw_format
 
 logger = logging.getLogger(__name__)
 
 # 재시도 설정
-MAX_DB_RETRIES=2
-
-
-# =============================================================================
-# 공시가격 → 시세 추정 배수 (국토부 현실화율 기반)
-# =============================================================================
-# 근거: 국토교통부·행정안전부, "부동산 공시가격 현실화 계획" (2020.11.03)
-#       대한민국 정책브리핑 https://www.korea.kr/news/policyNewsView.do?newsId=148879449
-#       국토교통부 보도자료 https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?lcmspage=94&id=95089062
-#       - 공동주택 현실화율 69.0% → 배수 1/0.69 = 1.449
-#       - 단독주택 현실화율 53.6% → 배수 1/0.536 = 1.866
-#       - 토지     현실화율 65.5% → 배수 1/0.655 = 1.527
-#       2023년 이후 4년 연속 동결 (2025.11.13 중앙부동산가격공시위원회 심의·의결)
-#
-# 오피스텔은 공동주택에 포함되지 않으며 국세청 기준시가로 별도 관리됨.
-# 공동주택(69%)과 단독주택(53.6%) 중간값인 약 63%를 추정 적용.
-# =============================================================================
-REALIZATION_MULTIPLIER = {
-    "아파트":     1.449,   # 공동주택 69.0%
-    "연립":       1.449,   # 공동주택 69.0%
-    "다세대":     1.449,   # 공동주택 69.0%
-    "단독":       1.866,   # 단독주택 53.6%
-    "다가구":     1.866,   # 단독주택 53.6%
-    "오피스텔":   1.449,   # 공동주택 69.0%
-}
-DEFAULT_MULTIPLIER = 1.449  # 공동주택 기준 (가장 보수적)
-
-
-def _get_realization_multiplier(building_type: str) -> Tuple[float, str]:
-    """
-    건물 유형별 공시가→시세 변환 배수 반환 (국토부 현실화율 기반)
-
-    Args:
-        building_type: 주용도 (예: "다세대주택", "아파트", "오피스텔")
-
-    Returns:
-        Tuple[배수, 매칭된 유형명]
-    """
-    if not building_type:
-        return DEFAULT_MULTIPLIER, "기본값(공동주택)"
-
-    for keyword, multiplier in REALIZATION_MULTIPLIER.items():
-        if keyword in building_type:
-            return multiplier, keyword
-
-    return DEFAULT_MULTIPLIER, "기본값(공동주택)"
+MAX_DB_RETRIES = 2
 
 
 def _execute_query_safe(query, params: dict = None, operation_name: str = "DB 작업"):
@@ -525,7 +483,7 @@ def estimate_market_price(
     public_price = get_public_price(pnu, area_size)
 
     if public_price > 0:
-        multiplier, matched_type = _get_realization_multiplier(building_type)
+        multiplier, matched_type = get_realization_multiplier(building_type)
         estimated = (public_price / 10000) * multiplier
         logger.info(
             f"공시지가 기반 시세 추정: {estimated:,.0f}만원 "
@@ -538,7 +496,8 @@ def estimate_market_price(
 
 def calculate_hug_eligibility(
         public_price: float,
-        deposit_manwon: float
+        deposit_manwon: float,
+        contract_date: Optional[date] = None,
 ) -> Tuple[bool, float, str]:
     """
     HUG 보증보험 가입 가능 여부 판단
@@ -546,6 +505,7 @@ def calculate_hug_eligibility(
     Args:
         public_price: 공시가격 (원)
         deposit_manwon: 보증금 (만원)
+        contract_date: 계약 기준일 (None이면 오늘 정책 적용)
 
     Returns:
         Tuple[가입가능여부, HUG한도(만원), 메시지]
@@ -553,8 +513,9 @@ def calculate_hug_eligibility(
     if public_price <= 0:
         return False, 0, "공시가 없음 (판단 불가)"
 
-    # HUG 한도 = 공시가 × 126%
-    hug_limit_won = public_price * 1.26
+    # 적용 시점의 HUG 공시가 배수 조회 (정책 이력 기반)
+    multiplier, _source = get_hug_multiplier(contract_date)
+    hug_limit_won = public_price * multiplier
     hug_limit_manwon = hug_limit_won / 10000
 
     if deposit_manwon <= hug_limit_manwon:

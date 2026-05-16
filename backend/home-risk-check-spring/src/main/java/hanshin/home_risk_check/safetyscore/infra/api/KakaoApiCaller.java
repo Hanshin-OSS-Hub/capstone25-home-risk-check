@@ -1,6 +1,5 @@
 package hanshin.home_risk_check.safetyscore.infra.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import hanshin.home_risk_check.safetyscore.infra.dto.KakaoApiResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -15,8 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
-
+import tools.jackson.databind.ObjectMapper;
 import java.util.concurrent.TimeUnit;
 
 

@@ -28,4 +28,10 @@ public class CustomUserDetailsService implements UserDetailsService {
                                   .orElseThrow(() -> new UsernameNotFoundException("유저 없음: " + email));
         return new CustomUserDetails(user);
     }
+
+    public UserDetails loadUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                                  .orElseThrow(() -> new UsernameNotFoundException("유저 없음: " + userId));
+        return new CustomUserDetails(user);
+    }
 }

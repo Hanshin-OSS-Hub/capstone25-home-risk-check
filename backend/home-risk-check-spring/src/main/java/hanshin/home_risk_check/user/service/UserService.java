@@ -1,14 +1,12 @@
 package hanshin.home_risk_check.user.service;
 
-import hanshin.home_risk_check.user.dto.LoginRequest;
-import hanshin.home_risk_check.user.dto.LoginResponse;
-import hanshin.home_risk_check.user.dto.SignupRequest;
 import hanshin.home_risk_check.user.dto.UserResponse;
 
 public interface UserService {
-    UserResponse signup(SignupRequest request);
-    LoginResponse login(LoginRequest request);
-    UserResponse getUserById(Long id);
+    UserResponse getUserById(Long userId);
     UserResponse getUserByEmail(String email);
-    void deleteUser(Long id);
+    UserResponse updatePassword(Long userId, String currentPassword, String newPassword);
+    UserResponse updateNickname(Long userId, String newNickname);
+    UserResponse updateProfileImage(Long userId, String newProfileImageUrl);
+    void deleteUser(Long userId);
 }

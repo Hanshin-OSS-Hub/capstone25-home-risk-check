@@ -1,5 +1,7 @@
 package hanshin.home_risk_check.global.security;
 
+import hanshin.home_risk_check.user.entity.CustomUserDetails;
+import hanshin.home_risk_check.user.service.CustomUserDetailsService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -8,24 +10,25 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
-import java.util.List;
 
 @Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private final CustomUserDetailsService customUserDetailsService;
     private final JwtUtil jwtUtil;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    @Autowired
+    public JwtAuthenticationFilter(CustomUserDetailsService customUserDetailsService, JwtUtil jwtUtil) {
+        this.customUserDetailsService = customUserDetailsService;
         this.jwtUtil = jwtUtil;
     }
 
@@ -37,12 +40,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null) {
             try {
-                Claims claims = jwtUtil.parseClaims(token);
-                String email = claims.getSubject();
-                String role = claims.get("role", String.class);
+                if (!jwtUtil.isAccessToken(token)) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+                Long userId = Long.parseLong(jwtUtil.parseClaims(token).getSubject());
+                CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserById(userId);
 
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        email, null, List.of(new SimpleGrantedAuthority(role)));
+                        userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (ExpiredJwtException e) {
                 log.debug("JWT 만료: {}", e.getMessage());

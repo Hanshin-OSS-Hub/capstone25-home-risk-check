@@ -16,6 +16,7 @@ public enum ErrorCode {
 
     // 인증/인가
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 401, "인증이 필요합니다."),
+    PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, 401, "현재 비밀번호가 일치하지 않습니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, 401, "이메일 또는 비밀번호가 올바르지 않습니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, 401, "토큰이 만료되었습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 401, "유효하지 않은 토큰입니다."),

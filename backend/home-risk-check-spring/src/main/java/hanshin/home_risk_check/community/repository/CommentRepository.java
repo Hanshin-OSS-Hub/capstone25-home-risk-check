@@ -1,26 +1,45 @@
 package hanshin.home_risk_check.community.repository;
 
 import hanshin.home_risk_check.community.entity.Comment;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 
-/*
- * 댓글 Repository
- */
 public interface CommentRepository extends JpaRepository<Comment, Long> {
+    //루트 댓글 페이징 조회
+    @EntityGraph(attributePaths = {"user"})
+    @Query("""
+              select comment
+              from Comment comment
+              where (comment.post.id = :postId)
+              and (comment.rootComment is null)
+          """)
+    Slice<Comment> findAllRootComments(@Param("postId") Long postId, Pageable pageable);
 
-    /*
-     * 특정 게시글의 댓글 전체 조회 (정렬 메서드명 기반)
-     * - rootComment.commentId -> depth -> createdAt 순 정렬
-     */
-    List<Comment> findAllByPost_PostIdOrderByRootComment_CommentIdAscDepthAscCreatedAtAsc(Long postId);
+    //대댓글 조회
+    @EntityGraph(attributePaths = {"user"})
+    @Query("""      
+               select comment
+               from Comment comment
+               where (comment.rootComment.id = :rootId)
+           """)
+    Slice<Comment> findAllChildComments(@Param("rootId") Long rootId, Pageable pageable);
 
-    /*
-     * 특정 게시글의 댓글 페이지 조회
-     * 정렬은 호출자가 Pageable의 Sort로 지정.
-     */
-    Page<Comment> findByPost_PostId(Long postId, Pageable pageable);
+    //답글 개수 조회
+    @Query("""
+               select comment.rootComment.id as rootId, count(comment) as cnt
+               from Comment comment
+               where comment.rootComment.id in :rootIds
+               group by comment.rootComment.id
+           """)
+    List<ReplyCount> countByRootIds(@Param("rootIds") List<Long> rootIds);
+
+    interface ReplyCount{
+        Long getRootId();
+        Long getCnt();
+    }
 }

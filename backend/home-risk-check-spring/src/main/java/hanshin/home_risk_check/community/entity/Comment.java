@@ -39,18 +39,18 @@ public class Comment {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_comment_id")
-    private Comment parentComment;
+    @JoinColumn(name = "root_comment_id")
+    private Comment rootComment;
 
     @Builder(access = AccessLevel.PRIVATE)
     public Comment(Post post,
                    User user,
                    String content,
-                   Comment parentComment) {
+                   Comment rootComment) {
         this.post = post;
         this.user = user;
         this.content = content;
-        this.parentComment = parentComment;
+        this.rootComment = rootComment;
     }
 
     public static Comment createRootComment(Post post, User user, String content){
@@ -58,16 +58,16 @@ public class Comment {
                 .post(post)
                 .user(user)
                 .content(content)
-                .parentComment(null)
+                .rootComment(null)
                 .build();
     }
 
-    public static Comment createReplyComment(Post post, User user, Comment parentComment, String content){
+    public static Comment createReplyComment(Post post, User user, Comment rootComment, String content){
         return Comment.builder()
                 .post(post)
                 .user(user)
                 .content(content)
-                .parentComment(parentComment)
+                .rootComment(rootComment)
                 .build();
     }
 }

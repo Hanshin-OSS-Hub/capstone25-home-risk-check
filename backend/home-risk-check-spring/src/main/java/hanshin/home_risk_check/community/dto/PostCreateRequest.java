@@ -1,44 +1,59 @@
 package hanshin.home_risk_check.community.dto;
 
-import jakarta.validation.constraints.NotBlank; // [변경] 빈 문자열 검증을 위해 추가
-import jakarta.validation.constraints.Size; // [변경] 길이 제한 검증을 위해 추가
-import lombok.Getter;
+import hanshin.home_risk_check.community.entity.PostCategory;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import java.util.List;
 
-/*
- * 게시글 작성 요청(Request) DTO
- *
- * 클라이언트(프론트)에서 게시글 작성 API를 호출할 때
- * 요청 body 데이터를 담는 객체
- *
- * 예:
- * {
- *   "categoryLabel": "서울시 성동구",
- *   "title": "이 매물 괜찮나요?",
- *   "content": "등기부등본을 보니 조금 이상합니다."
- * }
- */
-@Getter
-public class PostCreateRequest {
+public record PostCreateRequest (
 
-    /*
-     * 게시글 카테고리
-     * 예: "서울시 성동구"
-     */
-    @NotBlank(message = "카테고리는 비어 있을 수 없습니다.") // [변경]
-    @Size(max = 50, message = "카테고리는 최대 50자까지 가능합니다.") // [변경]
-    private String categoryLabel;
+    @NotNull(message = "카테고리는 비어 있을 수 없습니다.")
+    PostCategory postCategory,
 
-    /*
-     * 게시글 제목
-     */
-    @NotBlank(message = "제목은 비어 있을 수 없습니다.") // [변경]
-    @Size(max = 200, message = "제목은 최대 200자까지 가능합니다.") // [변경]
-    private String title;
+    @NotBlank(message = "제목은 비어 있을 수 없습니다.")
+    @Size(max = 200, message = "제목은 최대 200자까지 가능합니다.")
+    String title,
 
-    /*
-     * 게시글 본문 내용
-     */
-    @NotBlank(message = "내용은 비어 있을 수 없습니다.") // [변경]
-    @Size(max = 10000, message = "내용은 최대 10000자까지 가능합니다.") // [변경]
-    private String content;
+    @NotBlank(message = "내용은 비어 있을 수 없습니다.")
+    @Size(max = 10000, message = "내용은 최대 10000자까지 가능합니다.")
+    String content,
+
+    @Valid
+    Place place,
+
+    @Valid
+    Poll poll
+){
+    public record Place(
+
+        @NotNull(message = "위도는 비어 있을 수 없습니다.")
+        @DecimalMin(value = "-90.0", message = "위도는 -90.0 이상이어야 합니다.")
+        @DecimalMax(value = "90.0", message = "위도는 90.0 이하이어야 합니다.")
+        Double latitude,
+
+        @NotNull(message = "경도는 비어 있을 수 없습니다.")
+        @DecimalMin(value = "-180.0", message = "경도는 -180.0 이상이어야 합니다.")
+        @DecimalMax(value = "180.0", message = "경도는 180.0 이하이어야 합니다.")
+        Double longitude,
+
+        @NotBlank(message = "주소는 비어 있을 수 없습니다.")
+        @Size(max = 300, message = "주소는 최대 300자까지 가능합니다.")
+        String address,
+
+        @Size(max = 100, message = "장소 이름은 최대 100자까지 가능합니다.")
+        String placeName
+    ) {}
+
+    public record Poll(
+
+        boolean allowMultiple,
+
+        @NotEmpty(message = "옵션은 최소 1개 필요합니다.")
+        @Size(min = 1, max = 5, message = "옵션은 1~5개여야 합니다.")
+        List<
+            @NotBlank(message = "옵션 내용은 비어 있을 수 없습니다.")
+            @Size(max = 100, message = "옵션 내용은 100자까지 가능합니다.")
+            String
+        > options
+    ) {}
 }

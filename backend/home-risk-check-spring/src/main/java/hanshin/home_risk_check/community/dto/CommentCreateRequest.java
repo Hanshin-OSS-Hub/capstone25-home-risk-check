@@ -1,29 +1,12 @@
 package hanshin.home_risk_check.community.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size; // [변경] 댓글 길이 제한 검증을 위해 추가
-import lombok.Getter;
+import jakarta.validation.constraints.Size;
 
-/*
- * 댓글 작성 요청 DTO
- */
-@Getter
-public class CommentCreateRequest {
-
-    /*
-     * 댓글 내용
-     *
-     * 공백 문자열이나 빈 문자열 방지
-     */
+public record CommentCreateRequest (
     @NotBlank(message = "댓글 내용은 비어 있을 수 없습니다.")
-    @Size(max = 1000, message = "댓글은 최대 1000자까지 가능합니다.") // [변경]
-    private String content;
+    @Size(max = 1000, message = "댓글은 최대 1000자까지 가능합니다.")
+    String content,
 
-    /*
-     * 부모 댓글 ID
-     *
-     * null  -> 일반 댓글
-     * 값 존재 -> 대댓글
-     */
-    private Long parentCommentId;
-}
+    Long rootCommentId
+){}

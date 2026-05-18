@@ -12,11 +12,11 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "poll_record",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_poll_option_user", columnNames = {"poll_id", "option_id", "user_id"})
+                @UniqueConstraint(name = "uk_poll_option_user", columnNames = {"post_poll_id", "poll_option_id", "user_id"})
         },
         indexes = {
-                @Index(name = "idx_option", columnList = "option_id"),
-                @Index(name = "idx_poll_user", columnList = "poll_id, user_id")
+                @Index(name = "idx_poll_option", columnList = "post_poll_id, poll_option_id"),
+                @Index(name = "idx_poll_user", columnList = "post_poll_id, user_id")
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

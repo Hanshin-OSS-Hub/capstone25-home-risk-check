@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
+
     //루트 댓글 페이징 조회
     @EntityGraph(attributePaths = {"user"})
     @Query("""
@@ -18,28 +19,28 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
               where (comment.post.id = :postId)
               and (comment.rootComment is null)
           """)
-    Slice<Comment> findAllRootComments(@Param("postId") Long postId, Pageable pageable);
+    Slice<Comment> findAllRootCommentsByPostId(@Param("postId") Long postId, Pageable pageable);
 
     //대댓글 조회
     @EntityGraph(attributePaths = {"user"})
     @Query("""      
                select comment
                from Comment comment
-               where (comment.rootComment.id = :rootId)
+               where (comment.rootComment.id = :rootCommentId)
            """)
-    Slice<Comment> findAllChildComments(@Param("rootId") Long rootId, Pageable pageable);
+    Slice<Comment> findAllChildCommentsByRootCommentId(@Param("rootCommentId") Long rootCommentId, Pageable pageable);
 
     //답글 개수 조회
     @Query("""
-               select comment.rootComment.id as rootId, count(comment) as cnt
+               select comment.rootComment.id as rootCommentId, count(comment) as count
                from Comment comment
-               where comment.rootComment.id in :rootIds
+               where comment.rootComment.id in :rootCommentIds
                group by comment.rootComment.id
            """)
-    List<ReplyCount> countByRootIds(@Param("rootIds") List<Long> rootIds);
+    List<ChildCommentCount> countChildCommentsByRootCommentIds(@Param("rootCommentIds") List<Long> rootCommentIds);
 
-    interface ReplyCount{
-        Long getRootId();
-        Long getCnt();
+    interface ChildCommentCount{
+        Long getRootCommentId();
+        Long getCount();
     }
 }

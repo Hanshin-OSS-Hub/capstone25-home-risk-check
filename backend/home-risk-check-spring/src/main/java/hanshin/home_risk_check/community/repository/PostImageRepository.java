@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface PostImageRepository extends JpaRepository<PostImage, Long> {
+
     //게시글별 이미지 조회
     List<PostImage> findAllByPost_IdOrderByImageOrderAsc(Long postId);
 

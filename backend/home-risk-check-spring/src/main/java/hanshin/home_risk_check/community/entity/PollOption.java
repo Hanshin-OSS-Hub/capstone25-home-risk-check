@@ -7,8 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@Entity()
-@Table(name = "poll_option")
+@Entity
+@Table(
+        name = "poll_option",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uK_order_poll", columnNames = {"poll_order", "post_poll_id"})
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PollOption {
 

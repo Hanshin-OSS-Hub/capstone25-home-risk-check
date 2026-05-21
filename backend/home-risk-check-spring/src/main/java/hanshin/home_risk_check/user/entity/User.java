@@ -1,5 +1,6 @@
 package hanshin.home_risk_check.user.entity;
 
+import hanshin.home_risk_check.community.entity.ImageFile;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -9,7 +10,14 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "user")
+@Table(
+        name = "user",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_email", columnNames = {"email"}),
+                @UniqueConstraint(name = "uk_nickname", columnNames = {"nickname"}),
+                @UniqueConstraint(name = "uk_profile_image", columnNames = {"profile_image_file_id"})
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
 public class User {
@@ -19,21 +27,22 @@ public class User {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, length = 50)
     private String email;
 
     @Column(name = "password", nullable = false)
     private String passwordHash;
 
-    @Column(name = "nickname", nullable = false, unique = true)
+    @Column(name = "nickname", nullable = false, length = 10)
     private String nickname;
-
-    @Column(name = "profile_image_url", nullable = true)
-    private String profileImageUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "profile_image_file_id")
+    private ImageFile profileImageFile;
 
     @Column(name = "reg_date", nullable = false)
     @CreatedDate
@@ -44,23 +53,17 @@ public class User {
     private LocalDateTime updDate;
 
     @Builder
-    public User(String email, String passwordHash, String nickname, String profileImageUrl, Role role) {
+    public User(String email, String passwordHash, String nickname, Role role, ImageFile profileImageFile) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.nickname = nickname;
-        this.profileImageUrl = profileImageUrl;
         this.role = role;
+        this.profileImageFile = profileImageFile;
     }
 
-    public void updatePassword(String newPasswordHash) {
+    public void update(String newPasswordHash, String newNickname, ImageFile newProfileImageFile) {
         this.passwordHash = newPasswordHash;
-    }
-
-    public void updateNickname(String newNickname) {
         this.nickname = newNickname;
-    }
-
-    public void updateProfileImage(String newProfileImageUrl) {
-        this.profileImageUrl = newProfileImageUrl;
+        this.profileImageFile = newProfileImageFile;
     }
 }

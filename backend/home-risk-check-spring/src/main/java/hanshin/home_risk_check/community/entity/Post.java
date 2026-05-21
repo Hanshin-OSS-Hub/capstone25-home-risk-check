@@ -21,10 +21,10 @@ public class Post {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "post_category", nullable = false, length = 50)
+    @Column(name = "post_category", nullable = false, length = 20)
     private PostCategory postCategory;
 
-    @Column(name = "title", nullable = false, length = 200)
+    @Column(name = "title", nullable = false, length = 100)
     private String title;
 
     @Lob

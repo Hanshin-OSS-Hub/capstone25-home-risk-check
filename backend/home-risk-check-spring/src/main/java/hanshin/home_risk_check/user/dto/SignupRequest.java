@@ -9,7 +9,7 @@ public record SignupRequest (
 
     @NotBlank(message = "이메일은 비어 있을 수 없습니다.")
     @Email(message = "올바른 이메일 형식이 아닙니다.")
-    @Size(max = 100, message = "이메일은 최대 100자까지 가능합니다.")
+    @Size(max = 50, message = "이메일은 최대 50자까지 가능합니다.")
     String email,
 
     @NotBlank(message = "비밀번호는 비어 있을 수 없습니다.")
@@ -18,7 +18,7 @@ public record SignupRequest (
     String password,
 
     @NotBlank(message = "닉네임은 비어 있을 수 없습니다.")
-    @Size(min = 2, max = 20, message = "닉네임은 2~20자여야 합니다.")
+    @Size(min = 2, max = 10, message = "닉네임은 2~10자여야 합니다.")
     String nickname
 ) {
     private static final String PASSWORD_PATTERN =

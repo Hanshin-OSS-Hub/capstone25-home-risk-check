@@ -8,7 +8,12 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "post_place")
+@Table(
+        name = "post_place",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_post", columnNames = {"post_id"})
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostPlace {
 
@@ -30,7 +35,7 @@ public class PostPlace {
     private String placeName;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false,  unique = true)
+    @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
     @Builder

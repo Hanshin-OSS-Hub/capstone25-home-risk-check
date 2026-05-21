@@ -5,13 +5,17 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Entity
-@Table(name = "post_image")
+@Table(
+        name = "post_image",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_image", columnNames = {"image_file_id"}),
+                @UniqueConstraint(name = "uk_post_order", columnNames = {"post_id", "image_order"})
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EntityListeners(AuditingEntityListener.class)
 public class PostImage {
 
     @Id
@@ -19,28 +23,21 @@ public class PostImage {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "original_name", nullable = false)
-    private String originalName;
-
-    @Column(name = "storage_key", nullable = false, length = 500)
-    private String storageKey;
-
-    @Column(name = "image_order", nullable = false)
-    private int imageOrder;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "image_file_id", nullable = false)
+    private ImageFile imageFile;
+
+    @Column(name = "image_order", nullable = false)
+    private int imageOrder;
+
     @Builder
-    public PostImage(String originalName,
-                     String storageKey,
-                     int imageOrder,
-                     Post post
-                     ) {
-        this.originalName = originalName;
-        this.storageKey = storageKey;
-        this.imageOrder = imageOrder;
+    public PostImage(Post post, ImageFile imageFile, int imageOrder) {
         this.post = post;
+        this.imageFile = imageFile;
+        this.imageOrder = imageOrder;
     }
 }

@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@Entity()
+@Entity
 @Table(
         name = "poll_record",
         uniqueConstraints = {

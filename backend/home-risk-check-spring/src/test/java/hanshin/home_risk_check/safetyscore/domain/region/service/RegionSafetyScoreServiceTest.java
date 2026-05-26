@@ -1,5 +1,6 @@
 package hanshin.home_risk_check.safetyscore.domain.region.service;
 
+import hanshin.home_risk_check.safetyscore.config.SafetyScoreProperties;
 import hanshin.home_risk_check.safetyscore.domain.cctv.repository.CctvRepository;
 import hanshin.home_risk_check.safetyscore.domain.fire.repository.FireStationRepository;
 import hanshin.home_risk_check.safetyscore.domain.police.repository.PoliceStationRepository;
@@ -32,10 +33,14 @@ class RegionSafetyScoreServiceTest {
     @Mock private CctvRepository cctvRepository;
     @Mock private PoliceStationRepository policeStationRepository;
     @Mock private FireStationRepository fireStationRepository;
+    @Mock private SafetyScoreProperties safetyScoreProperties;
 
     @Test
     @DisplayName("전국 점수 계산 시, 가장 안전한 지역은 100점, 가장 위험한 지역은 0점으로 정규화되어 업데이트된다.")
     void calculateAllRegionScores_Success() {
+        SafetyScoreProperties.MacroWeights mockMacro = new SafetyScoreProperties.MacroWeights(0.2, 0.5, 0.3);
+        when(safetyScoreProperties.macroWeights()).thenReturn(mockMacro);
+
         // 100점 마을
         Region safeRegion = mock(Region.class);
         MultiPolygon safeGeom = mock(MultiPolygon.class);

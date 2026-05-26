@@ -9,11 +9,14 @@ public record SafetyScoreProperties(
         double densityWeight,    // 밀도 가중치 (5.0)
         double policeScore,      // 경찰서 가점 (5.0)
         double fireScore,        // 소방서 가점 (2.0)
-        Weights weights          // 0.2 / 0.5 / 0.3 가중치
+        MacroWeights macroWeights // 가중치 0.2 / 0.5 / 0.3
+
 ) {
-    public record Weights(
-            double cctv,
-            double police,
-            double lighting
+
+    public record MacroWeights(
+            double infra,
+            double crime,
+            double accident
     ) {}
+
 }

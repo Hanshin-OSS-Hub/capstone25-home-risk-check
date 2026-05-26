@@ -59,6 +59,17 @@ class SafetyScoreServiceTest {
 
     @BeforeEach
     void setUp() {
+        SafetyScoreProperties.MacroWeights macroWeights = new SafetyScoreProperties.MacroWeights(0.2, 0.5, 0.3);
+
+        properties = new SafetyScoreProperties(
+                500.0,        // radius
+                4.5,          // hotspotWeight
+                5.0,          // densityWeight
+                5.0,          // policeScore
+                2.0,          // fireScore
+                macroWeights  // 거시용 macroWeights 객체 주입
+        );
+
         ReflectionTestUtils.setField(safetyScoreService, "properties", properties);
     }
     @Test
@@ -66,10 +77,13 @@ class SafetyScoreServiceTest {
     void calculateSafetyScore_Success() {
 
         // properties 수정여부 체크 (수정시 여기도 수정)
-        assertThat(properties.weights().cctv()).isEqualTo(0.2);
-        assertThat(properties.weights().police()).isEqualTo(0.5);
-        assertThat(properties.weights().lighting()).isEqualTo(0.3);
+        assertThat(properties.macroWeights().crime()).isEqualTo(0.5);
+        assertThat(properties.macroWeights().accident()).isEqualTo(0.3);
+        assertThat(properties.macroWeights().infra()).isEqualTo(0.2);
+
         assertThat(properties.radius()).isEqualTo(500.0);
+        assertThat(properties.hotspotWeight()).isEqualTo(4.5);
+        assertThat(properties.densityWeight()).isEqualTo(5.0);
 
         // ---알려진 입력값 ---
         String targetAddress = "경기도 용인시 기흥구 신갈동";

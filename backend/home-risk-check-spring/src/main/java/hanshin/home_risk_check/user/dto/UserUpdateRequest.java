@@ -1,13 +1,15 @@
 package hanshin.home_risk_check.user.dto;
 
-import lombok.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class UserUpdateRequest {
-    private String nickname;
-    private String profileImageUrl;
-}
+public record UserUpdateRequest(
+
+    @NotNull
+    @Valid
+    NicknameUpdateRequest nicknameUpdateRequest,
+
+    @NotNull
+    @Valid
+    PasswordUpdateRequest passwordUpdateRequest
+) {}

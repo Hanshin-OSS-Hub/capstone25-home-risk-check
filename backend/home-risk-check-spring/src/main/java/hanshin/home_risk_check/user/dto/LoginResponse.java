@@ -1,13 +1,12 @@
 package hanshin.home_risk_check.user.dto;
 
-import lombok.AllArgsConstructor;
+import hanshin.home_risk_check.auth.dto.TokenResponse;
 import lombok.Builder;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
 @Builder
-public class LoginResponse {
-    private String accessToken;
-    private String refreshToken;
-}
+public record LoginResponse  (
+    TokenResponse token,
+    String email,
+    String nickname,
+    String profileImageUrl
+) {}

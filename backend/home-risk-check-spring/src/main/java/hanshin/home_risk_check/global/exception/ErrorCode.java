@@ -16,6 +16,7 @@ public enum ErrorCode {
 
     // 인증/인가
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 401, "인증이 필요합니다."),
+    PASSWORD_MISMATCH(HttpStatus.UNAUTHORIZED, 401, "현재 비밀번호가 일치하지 않습니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, 401, "이메일 또는 비밀번호가 올바르지 않습니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, 401, "토큰이 만료되었습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 401, "유효하지 않은 토큰입니다."),
@@ -34,10 +35,17 @@ public enum ErrorCode {
     // 게시글 이미지
     POST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "게시글 이미지를 찾을 수 없습니다."),
     INVALID_POST_IMAGE(HttpStatus.BAD_REQUEST, 400, "해당 게시글의 이미지가 아닙니다."),
-    TOO_MANY_IMAGES(HttpStatus.BAD_REQUEST, 400, "게시글 이미지는 최대 10장까지 업로드할 수 있습니다."),
+    POST_IMAGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, 400, "게시글 이미지는 최대 10장까지 업로드할 수 있습니다."),
     EMPTY_IMAGE_REQUEST(HttpStatus.BAD_REQUEST, 400, "업로드할 이미지가 없습니다."),
     INVALID_IMAGE_TYPE(HttpStatus.BAD_REQUEST, 400, "지원하지 않는 이미지 형식입니다."),
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "파일 업로드에 실패했습니다."),
+
+    // 투표
+    POST_POLL_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "게시글 투표를 찾을 수 없습니다."),
+    POLL_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "투표 옵션을 찾을 수 없습니다."),
+    INVALID_POLL_OPTION(HttpStatus.BAD_REQUEST, 400, "해당 투표의 옵션이 아닙니다."),
+    POLL_MULTIPLE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 400, "복수 선택이 허용되지 않는 투표입니다."),
+    POLL_ALREADY_VOTED(HttpStatus.CONFLICT, 409, "이미 투표한 게시글입니다."),
 
     // 외부 연동
     EXTERNAL_API_FAILED(HttpStatus.SERVICE_UNAVAILABLE, 503, "외부 API 호출에 실패했습니다."),

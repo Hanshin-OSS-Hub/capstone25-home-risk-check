@@ -2,26 +2,37 @@
 공시가격 현실화율 기반 시세 추정 배수 테스트
 
 테스트 항목:
-1. _get_realization_multiplier(): 건물 유형별 배수 매칭 정확성
+1. get_realization_multiplier(): 건물 유형별 배수 매칭 정확성 (정책 모듈 직접 테스트)
 2. estimate_market_price(): 공시가 fallback 시 유형별 배수 적용 검증
 3. predict_service 통합: building_type이 estimate_market_price에 전달되는지 검증
+4. 현실화율 배수 값 정확성 검증
+5. 정책 이력 자체 검증 (시간 갭/중복, 적용일자 기반 조회)
 
 근거: 국토교통부 "'24년 현실화율, 올해와 동일하게 동결" (2023.11.21)
       공동주택 69.0%, 단독주택 53.6%, 토지 65.5%
+
+[변경 이력]
+- 정책 외부화에 따라 import 경로 갱신
+  - app.services.price_service._get_realization_multiplier
+    → app.core.policy_config.get_realization_multiplier
+  - REALIZATION_MULTIPLIER, DEFAULT_MULTIPLIER 직접 참조 제거
+- 정책 이력 일관성 검증 테스트(TestPolicyHistoryConsistency) 추가
 """
+from datetime import date, timedelta
+
 import pytest
 from unittest.mock import patch, MagicMock
 
 
 # =============================================================================
-# 1. _get_realization_multiplier 단위 테스트
+# 1. get_realization_multiplier 단위 테스트
 # =============================================================================
 class TestGetRealizationMultiplier:
     """건물 유형별 배수 매칭 검증"""
 
     def _get_fn(self):
-        from app.services.price_service import _get_realization_multiplier
-        return _get_realization_multiplier
+        from app.core.policy_config import get_realization_multiplier
+        return get_realization_multiplier
 
     # --- 공동주택 (69.0% → 1.449) ---
 
@@ -314,6 +325,84 @@ class TestRealizationMultiplierValues:
 
     def test_default_multiplier_is_most_conservative(self):
         """기본값은 가장 보수적(시세 낮게 추정)인 공동주택 배수"""
-        from app.services.price_service import DEFAULT_MULTIPLIER, REALIZATION_MULTIPLIER
-        all_multipliers = list(REALIZATION_MULTIPLIER.values())
-        assert DEFAULT_MULTIPLIER == min(all_multipliers)
+        from app.core.policy_config import REALIZATION_POLICY_HISTORY
+
+        current_policy = REALIZATION_POLICY_HISTORY[0]   # 최신 정책
+        all_multipliers = list(current_policy.multipliers_by_keyword.values())
+        assert current_policy.default_multiplier == min(all_multipliers)
+
+
+# =============================================================================
+# 5. 정책 이력 자체 검증 (신규)
+# =============================================================================
+class TestPolicyHistoryConsistency:
+    """정책 이력의 시간 순서·중복·범위 검증"""
+
+    # --- HUG 정책 ---
+
+    def test_hug_history_has_no_gaps_or_overlaps(self):
+        """HUG 정책 이력에 시간 갭이나 중복이 없어야 함"""
+        from app.core.policy_config import HUG_POLICY_HISTORY
+
+        # 시간순 정렬 (오래된 것부터)
+        sorted_policies = sorted(HUG_POLICY_HISTORY, key=lambda p: p.effective_from)
+        for prev, curr in zip(sorted_policies, sorted_policies[1:]):
+            assert prev.effective_to is not None, \
+                f"중간 정책의 effective_to는 필수: {prev.source}"
+            assert prev.effective_to + timedelta(days=1) == curr.effective_from, \
+                f"정책 갭/중복 발견: {prev.source} → {curr.source}"
+
+    def test_hug_only_latest_policy_has_open_end(self):
+        """현재 유효 HUG 정책(effective_to=None)은 정확히 1개여야 함"""
+        from app.core.policy_config import HUG_POLICY_HISTORY
+
+        open_ended = [p for p in HUG_POLICY_HISTORY if p.effective_to is None]
+        assert len(open_ended) == 1
+
+    def test_hug_lookup_for_today_returns_current_policy(self):
+        """오늘 날짜 조회 시 현재 정책(1.26) 반환"""
+        from app.core.policy_config import get_hug_multiplier
+
+        multiplier, source = get_hug_multiplier()
+        assert multiplier == 1.26
+        assert "2023" in source
+
+    def test_hug_lookup_for_legacy_date_returns_legacy_policy(self):
+        """2020년 시점 조회 시 구 정책(1.50) 반환"""
+        from app.core.policy_config import get_hug_multiplier
+
+        multiplier, source = get_hug_multiplier(at=date(2020, 1, 1))
+        assert multiplier == 1.50
+        assert "구 기준" in source
+
+    def test_hug_lookup_for_unmodeled_date_raises(self):
+        """모델링되지 않은 과거 날짜는 ValueError 발생 (silent fallback 금지)"""
+        from app.core.policy_config import get_hug_multiplier
+
+        with pytest.raises(ValueError):
+            get_hug_multiplier(at=date(2000, 1, 1))
+
+    # --- 현실화율 정책 ---
+
+    def test_realization_only_latest_policy_has_open_end(self):
+        """현재 유효 현실화율 정책(effective_to=None)은 정확히 1개여야 함"""
+        from app.core.policy_config import REALIZATION_POLICY_HISTORY
+
+        open_ended = [p for p in REALIZATION_POLICY_HISTORY if p.effective_to is None]
+        assert len(open_ended) == 1
+
+    def test_realization_lookup_for_unmodeled_date_raises(self):
+        """모델링되지 않은 과거 날짜는 ValueError 발생"""
+        from app.core.policy_config import get_realization_multiplier
+
+        with pytest.raises(ValueError):
+            get_realization_multiplier("아파트", at=date(2000, 1, 1))
+
+    def test_realization_default_is_min_of_keyword_multipliers(self):
+        """default_multiplier는 정책 내 최소 배수와 같아야 (보수적 기본값)"""
+        from app.core.policy_config import REALIZATION_POLICY_HISTORY
+
+        for policy in REALIZATION_POLICY_HISTORY:
+            min_keyword = min(policy.multipliers_by_keyword.values())
+            assert policy.default_multiplier == min_keyword, \
+                f"정책 default_multiplier가 키워드 최소값과 다름: {policy.source}"

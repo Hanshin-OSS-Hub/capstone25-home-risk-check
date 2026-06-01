@@ -19,6 +19,9 @@
   - 변경: calculate_hybrid_score(features) → 룰 60% + ML 40% 결합 점수
 - [NEW] estimate_market_price 호출 시 building_type 전달
   - 공시가 fallback 시 국토부 현실화율 기반 유형별 배수 적용
+- [REFACTOR] hug_risk_ratio 중복 계산 제거
+  - build_features_from_sources에서 이미 동일하게 계산되던 죽은 코드 제거
+  - HUG 배수는 app.core.policy_config 에서 단일 관리
 """
 import logging
 from datetime import datetime
@@ -222,10 +225,6 @@ def predict_risk_with_ocr(
             public_price_won=public_price,
             ocr_features=ocr_features
         )
-
-        # HUG 위험 비율 업데이트 (실제 공시가 기반)
-        if public_price > 0:
-            features['hug_risk_ratio'] = (deposit_manwon * 10000) / (public_price * 1.26)
 
         # 5. [변경] 하이브리드 판정 (룰 베이스 60% + ML 40%)
         hybrid = calculate_hybrid_score(features)

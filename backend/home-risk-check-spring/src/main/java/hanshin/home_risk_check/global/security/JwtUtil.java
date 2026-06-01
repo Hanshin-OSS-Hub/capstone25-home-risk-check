@@ -22,24 +22,29 @@ public class JwtUtil {
     @Value("${jwt.public-key}")
     private RSAPublicKey publicKey;
 
-    private static final long ACCESS_TOKEN_EXPIRY  = 1000L * 60 * 30;
-    private static final long REFRESH_TOKEN_EXPIRY = 1000L * 60 * 60 * 24 * 7;
+    @Value("${jwt.access-token-expiration}")
+    private long ACCESS_TOKEN_EXPIRATION;
 
-    public String generateAccessToken(String email, String role) {
+    @Value("${jwt.refresh-token-expiration}")
+    private long REFRESH_TOKEN_EXPIRATION;
+
+    public String generateAccessToken(Long userId, String role) {
         return Jwts.builder()
-                   .subject(email)
+                   .subject(String.valueOf(userId))
                    .claim("role", role)
+                   .claim("type", TokenType.ACCESS.name())
                    .issuedAt(new Date())
-                   .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRY))
+                   .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
                    .signWith(privateKey)
                    .compact();
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(Long userId) {
         return Jwts.builder()
-                   .subject(email)
+                   .subject(String.valueOf(userId))
+                   .claim("type", TokenType.REFRESH.name())
                    .issuedAt(new Date())
-                   .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRY))
+                   .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
                    .signWith(privateKey)
                    .compact();
     }
@@ -50,18 +55,6 @@ public class JwtUtil {
                    .build()
                    .parseSignedClaims(token)
                    .getPayload();
-    }
-
-    public String getEmail(String token) {
-        return parseClaims(token).getSubject();
-    }
-
-    public boolean isExpired(String token) {
-        try {
-            return parseClaims(token).getExpiration().before(new Date());
-        } catch (ExpiredJwtException e) {
-            return true;
-        }
     }
 
     public TokenValidationResult validate(String token) {
@@ -79,8 +72,20 @@ public class JwtUtil {
         }
     }
 
-    public boolean validateToken(String token) {
-        return validate(token) == TokenValidationResult.VALID;
+    public boolean isExpired(String token) {
+        try {
+            return parseClaims(token).getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        }
+    }
+
+    public boolean isAccessToken(String token) {
+        return parseClaims(token).get("type", String.class).equals(TokenType.ACCESS.name());
+    }
+
+    public boolean isRefreshToken(String token) {
+        return parseClaims(token).get("type", String.class).equals(TokenType.REFRESH.name());
     }
 
     public enum TokenValidationResult {
@@ -89,5 +94,10 @@ public class JwtUtil {
         INVALID_SIGNATURE,
         MALFORMED,
         INVALID
+    }
+
+    public enum TokenType {
+        ACCESS,
+        REFRESH
     }
 }

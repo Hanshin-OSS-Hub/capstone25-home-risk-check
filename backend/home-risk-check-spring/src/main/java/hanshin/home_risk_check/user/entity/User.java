@@ -1,6 +1,6 @@
 package hanshin.home_risk_check.user.entity;
 
-import hanshin.home_risk_check.community.entity.ImageFile;
+import hanshin.home_risk_check.file.entity.ImageFile;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(
-        name = "user",
+        name = "app_user",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_email", columnNames = {"email"}),
                 @UniqueConstraint(name = "uk_nickname", columnNames = {"nickname"}),
@@ -30,7 +30,7 @@ public class User {
     @Column(name = "email", nullable = false, length = 50)
     private String email;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Column(name = "nickname", nullable = false, length = 10)
@@ -40,17 +40,17 @@ public class User {
     @Column(name = "role", nullable = false)
     private Role role;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_image_file_id")
     private ImageFile profileImageFile;
 
-    @Column(name = "reg_date", nullable = false)
+    @Column(name = "created_at", nullable = false)
     @CreatedDate
-    private LocalDateTime regDate;
+    private LocalDateTime createdAt;
 
-    @Column(name = "upd_date", nullable = false)
+    @Column(name = "updated_at", nullable = false)
     @LastModifiedDate
-    private LocalDateTime updDate;
+    private LocalDateTime updatedAt;
 
     @Builder
     public User(String email, String passwordHash, String nickname, Role role, ImageFile profileImageFile) {
@@ -61,9 +61,19 @@ public class User {
         this.profileImageFile = profileImageFile;
     }
 
-    public void update(String newPasswordHash, String newNickname, ImageFile newProfileImageFile) {
+    public void updatePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
+    }
+
+    public void updateNickname(String newNickname) {
         this.nickname = newNickname;
+    }
+
+    public void updateProfileImageFile(ImageFile newProfileImageFile) {
         this.profileImageFile = newProfileImageFile;
+    }
+
+    public void deleteProfileImageFile() {
+        this.profileImageFile = null;
     }
 }

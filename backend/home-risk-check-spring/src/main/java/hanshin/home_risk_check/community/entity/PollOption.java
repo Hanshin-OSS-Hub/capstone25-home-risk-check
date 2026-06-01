@@ -8,12 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(
-        name = "poll_option",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uK_order_poll", columnNames = {"poll_order", "post_poll_id"})
-        }
-)
+@Table(name = "poll_option")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PollOption {
 
@@ -25,17 +20,13 @@ public class PollOption {
     @Column(name = "option_name", nullable = false, length = 100)
     private String optionName;
 
-    @Column(name = "poll_order", nullable = false)
-    private int pollOrder;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_poll_id", nullable = false)
     private PostPoll postPoll;
 
     @Builder
-    public PollOption(String optionName, int pollOrder, PostPoll postPoll){
+    public PollOption(String optionName, PostPoll postPoll){
         this.optionName = optionName;
-        this.pollOrder = pollOrder;
         this.postPoll = postPoll;
     }
 }

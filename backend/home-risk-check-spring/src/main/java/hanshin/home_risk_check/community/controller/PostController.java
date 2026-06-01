@@ -1,115 +1,132 @@
 package hanshin.home_risk_check.community.controller;
 
 import hanshin.home_risk_check.community.dto.PostCreateRequest;
-import hanshin.home_risk_check.community.dto.PostImageResponse;
-import hanshin.home_risk_check.community.dto.PostResponse;
+import hanshin.home_risk_check.community.dto.PostDetailResponse;
+import hanshin.home_risk_check.community.dto.PostLikeResponse;
+import hanshin.home_risk_check.community.dto.PostPollVoteRequest;
+import hanshin.home_risk_check.community.dto.PostSearchRequest;
+import hanshin.home_risk_check.community.dto.PostSummaryResponse;
 import hanshin.home_risk_check.community.dto.PostUpdateRequest;
-import hanshin.home_risk_check.community.service.PostImageService;
-import hanshin.home_risk_check.community.service.PostService;
+import hanshin.home_risk_check.community.service.CommunityFacade;
 import hanshin.home_risk_check.global.dto.ApiResponse;
+import hanshin.home_risk_check.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 
-/*
- * 게시글 Controller
- */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/posts")
 public class PostController {
 
-    private final PostService postService;
-    private final PostImageService postImageService;
+    private final CommunityFacade communityFacade;
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<PostDetailResponse>> create(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @Valid @RequestPart("data") PostCreateRequest postCreateRequest,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+    ) {
+        PostDetailResponse response = communityFacade.createPost(currentUser.getUser(), postCreateRequest, images);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(HttpStatus.CREATED.value(), "게시글 작성 성공", response));
+    }
 
     @GetMapping
-    public ApiResponse<Page<PostResponse>> getPosts(
-            @RequestParam(required = false) String categoryLabel,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+    public ResponseEntity<ApiResponse<Slice<PostSummaryResponse>>> getPosts(
+            @Valid @ModelAttribute PostSearchRequest request
     ) {
-        return ApiResponse.success(postService.getPosts(categoryLabel, page, size));
+        Slice<PostSummaryResponse> response = communityFacade.getPosts(request);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 목록 조회 성공", response));
     }
 
     @GetMapping("/{postId}")
-    public ApiResponse<PostResponse> getPost(@PathVariable Long postId) {
-        return ApiResponse.success(postService.getPost(postId));
-    }
-
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<PostResponse> createPost(
-            @AuthenticationPrincipal String email,
-            @Valid @RequestBody PostCreateRequest request
+    public ResponseEntity<ApiResponse<PostDetailResponse>> get(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable Long postId
     ) {
-        return ApiResponse.success(
-                HttpStatus.CREATED.value(),
-                "게시글 작성 성공",
-                postService.createPost(email, request)
-        );
+        PostDetailResponse response = communityFacade.getPost(currentUser.getUser(), postId);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 조회 성공", response));
     }
 
-    @PatchMapping("/{postId}")
-    public ApiResponse<PostResponse> updatePost(
+    @PostMapping("/{postId}/likes")
+    public ResponseEntity<ApiResponse<PostLikeResponse>> like(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable Long postId
+    ) {
+        PostLikeResponse response = communityFacade.like(currentUser.getUser(), postId);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 좋아요 성공", response));
+    }
+
+    @DeleteMapping("/{postId}/likes")
+    public ResponseEntity<ApiResponse<PostLikeResponse>> cancelLike(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable Long postId
+    ) {
+        PostLikeResponse response = communityFacade.cancelLike(currentUser.getUser(), postId);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 좋아요 취소 성공", response));
+    }
+
+    @PostMapping("/{postId}/likes/toggle")
+    public ResponseEntity<ApiResponse<PostLikeResponse>> toggleLike(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable Long postId
+    ) {
+        PostLikeResponse response = communityFacade.toggleLike(currentUser.getUser(), postId);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 좋아요 토글 성공", response));
+    }
+
+    @PostMapping("/{postId}/poll/votes")
+    public ResponseEntity<ApiResponse<PostDetailResponse>> vote(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
             @PathVariable Long postId,
-            @AuthenticationPrincipal String email,
-            @Valid @RequestBody PostUpdateRequest request
+            @Valid @RequestBody PostPollVoteRequest request
     ) {
-        return ApiResponse.success(
-                postService.updatePost(postId, email, request)
-        );
+        PostDetailResponse response = communityFacade.vote(currentUser.getUser(), postId, request);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 투표 성공", response));
+    }
+
+    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<PostDetailResponse>> update(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable Long postId,
+            @Valid @RequestPart("data") PostUpdateRequest request,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+    ) {
+        PostDetailResponse response = communityFacade.updatePost(currentUser.getUser(), postId, request, images);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 수정 성공", response));
     }
 
     @DeleteMapping("/{postId}")
-    public ApiResponse<Void> deletePost(
-            @PathVariable Long postId,
-            @AuthenticationPrincipal String email
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @PathVariable Long postId
     ) {
-        postService.deletePost(postId, email);
-        return ApiResponse.success(HttpStatus.OK.value(), "게시글 삭제 성공", null);
-    }
-
-    /*
-     * 게시글 이미지 업로드
-     * 게시글 1개당 최대 10장
-     */
-    @PostMapping(value = "/{postId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<List<PostImageResponse>> uploadPostImages(
-            @PathVariable Long postId,
-            @RequestPart("images") List<MultipartFile> images
-    ) {
-        return ApiResponse.success(
-                HttpStatus.CREATED.value(),
-                "게시글 이미지 업로드 성공",
-                postImageService.uploadPostImages(postId, images)
-        );
-    }
-
-    /*
-     * 게시글 이미지 목록 조회
-     */
-    @GetMapping("/{postId}/images")
-    public ApiResponse<List<PostImageResponse>> getPostImages(@PathVariable Long postId) {
-        return ApiResponse.success(postImageService.getPostImages(postId));
-    }
-
-    /*
-     * 게시글 이미지 단건 삭제
-     */
-    @DeleteMapping("/{postId}/images/{postImageId}")
-    public ApiResponse<Void> deletePostImage(
-            @PathVariable Long postId,
-            @PathVariable Long postImageId
-    ) {
-        postImageService.deletePostImage(postId, postImageId);
-        return ApiResponse.success(HttpStatus.OK.value(), "게시글 이미지 삭제 성공", null);
+        communityFacade.deletePost(currentUser.getUser(), postId);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 삭제 성공", null));
     }
 }

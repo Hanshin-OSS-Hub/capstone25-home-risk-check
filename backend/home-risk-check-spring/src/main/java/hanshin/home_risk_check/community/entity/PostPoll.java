@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "post_poll",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_post", columnNames = {"post_id"})
+                @UniqueConstraint(name = "uk_post_poll_post", columnNames = {"post_id"})
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

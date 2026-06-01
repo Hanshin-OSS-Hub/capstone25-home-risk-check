@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "comment")
+@Table(name = "post_comment")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
 public class Comment {
@@ -68,5 +68,9 @@ public class Comment {
                 .content(content)
                 .rootComment(rootComment)
                 .build();
+    }
+
+    public boolean isWrittenBy(User user) {
+        return this.user.getId().equals(user.getId());
     }
 }

@@ -2,6 +2,7 @@ package hanshin.home_risk_check.auth.controller;
 
 import hanshin.home_risk_check.auth.dto.TokenResponse;
 import hanshin.home_risk_check.auth.service.AuthService;
+import hanshin.home_risk_check.auth.util.RefreshTokenCookieFactory;
 import hanshin.home_risk_check.global.dto.ApiResponse;
 import hanshin.home_risk_check.user.dto.LoginRequest;
 import hanshin.home_risk_check.user.dto.LoginResponse;
@@ -9,7 +10,7 @@ import hanshin.home_risk_check.user.dto.SignupRequest;
 import hanshin.home_risk_check.user.dto.UserResponse;
 import hanshin.home_risk_check.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +18,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
-
-    @Autowired
-    public AuthController(AuthService authService) {
-        this.authService = authService;
-    }
+    private final RefreshTokenCookieFactory refreshTokenCookieFactory;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserResponse>> signup(@Valid @RequestBody SignupRequest signupRequest) {
@@ -38,14 +36,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
         LoginResponse response = authService.login(loginRequest);
-        String refreshToken = response.token().refreshToken();
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                                              .httpOnly(true)
-                                              .secure(false)
-                                              .sameSite("Lax")
-                                              .path("/")
-                                              .maxAge(7 * 24 * 60 * 60)
-                                              .build();
+        ResponseCookie cookie = refreshTokenCookieFactory.create(response.token().refreshToken());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -56,13 +47,8 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal CustomUserDetails userDetails) {
         authService.logout(userDetails.getUserId());
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                                              .httpOnly(true)
-                                              .secure(false)
-                                              .sameSite("Lax")
-                                              .path("/")
-                                              .maxAge(0)
-                                              .build();
+        ResponseCookie cookie = refreshTokenCookieFactory.revoke();
+
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .header("Set-Cookie", cookie.toString())
@@ -72,14 +58,8 @@ public class AuthController {
     @PostMapping("/reissue")
     public ResponseEntity<ApiResponse<TokenResponse>> reissue(@CookieValue(name = "refreshToken", required = false) String refreshToken) {
         TokenResponse response = authService.reissue(refreshToken);
-        String newRefreshToken = response.refreshToken();
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", newRefreshToken)
-                                              .httpOnly(true)
-                                              .secure(false)
-                                              .sameSite("Lax")
-                                              .path("/")
-                                              .maxAge(7 * 24 * 60 * 60)
-                                              .build();
+        ResponseCookie cookie = refreshTokenCookieFactory.create(response.refreshToken());
+
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .header("Set-Cookie", cookie.toString())

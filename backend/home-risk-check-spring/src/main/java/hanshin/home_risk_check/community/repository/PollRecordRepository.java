@@ -1,38 +1,41 @@
 package hanshin.home_risk_check.community.repository;
 
+import hanshin.home_risk_check.community.entity.PollOption;
 import hanshin.home_risk_check.community.entity.PollRecord;
+import hanshin.home_risk_check.community.entity.PostPoll;
+import hanshin.home_risk_check.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface PollRecordRepository extends JpaRepository<PollRecord, Long> {
 
-    //투표 참여 여부 확인
-    boolean existsByPostPoll_IdAndUser_Id(Long postPollId, Long userId);
-
-    //사용자가 특정 투표에서 선택한 옵션 조회
+    //사용자가 투표에서 선택한 옵션 조회
     @Query("""
                select pollRecord.pollOption.id
                from PollRecord pollRecord
-               where pollRecord.postPoll.id = :postPollId
-               and pollRecord.user.id = :userId
+               where pollRecord.postPoll = :postPoll
+               and pollRecord.user = :user
            """)
-    List<Long> findAllPollOptionIdsByPostPollIdAndUserId(@Param("postPollId") Long postPollId, @Param("userId") Long userId);
+    List<Long> findAllPollOptionIdsByPostPollAndUser(@Param("postPoll") PostPoll postPoll, @Param("user") User user);
+
+    boolean existsByPostPollAndUser(PostPoll postPoll, User user);
 
     //옵션별 투표 수 조회
     @Query("""
-              select pollOption.id as optionId, count(pollRecord) as count
-              from PollOption pollOption
-              left join PollRecord pollRecord
-              on pollRecord.pollOption.id = pollOption.id
-              where pollOption.postPoll.id = :postPollId
-              group by pollRecord.pollOption.id
-          """)
-    List<OptionSelectedCount> countPollOptionsByPostPollIdGroupByPollOptionId(@Param("postPollId") Long postPollId);
+              select pollRecord.pollOption.id as pollOptionId, count(pollRecord.id) as pollOptionCount
+              from PollRecord pollRecord
+              where pollRecord.pollOption in :pollOptions
+              group by pollRecord.pollOption
+           """)
+    List<PollOptionCount> countPollOptions(@Param("pollOptions") List<PollOption> pollOptions);
 
-    interface OptionSelectedCount{
-        Long getOptionId();
-        Long getCount();
+    void deleteAllByPostPoll(PostPoll postPoll);
+
+    interface PollOptionCount {
+        Long getPollOptionId();
+        Long getPollOptionCount();
     }
 }

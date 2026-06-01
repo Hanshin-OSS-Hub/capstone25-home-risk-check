@@ -1,13 +1,14 @@
 package hanshin.home_risk_check.community.dto;
 
+import lombok.Builder;
 import java.time.LocalDateTime;
-import java.util.List;
 
+@Builder
 public record CommentResponse(
     Long id,
     AuthorResponse author,
     String content,
     LocalDateTime createdAt,
     boolean isWrittenByMe,
-    List<CommentResponse> childComments
-){}
+    long replyCount
+) {}

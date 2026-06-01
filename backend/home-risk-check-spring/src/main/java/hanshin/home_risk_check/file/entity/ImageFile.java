@@ -1,4 +1,4 @@
-package hanshin.home_risk_check.community.entity;
+package hanshin.home_risk_check.file.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

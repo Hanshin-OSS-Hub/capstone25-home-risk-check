@@ -10,7 +10,13 @@ import java.time.LocalDateTime;
 
 @Getter
 @Entity
-@Table(name = "post")
+@Table(
+        name = "post",
+        indexes = {
+                @Index(name = "idx_post_category_created_at", columnList = "post_category, created_at"),
+                @Index(name = "idx_post_created_at", columnList = "created_at")
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
 public class Post {
@@ -27,8 +33,7 @@ public class Post {
     @Column(name = "title", nullable = false, length = 100)
     private String title;
 
-    @Lob
-    @Column(name = "content", nullable = false)
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "created_at", nullable = false)
@@ -55,5 +60,9 @@ public class Post {
         this.postCategory = postCategory;
         this.title = title;
         this.content = content;
+    }
+
+    public boolean isWrittenBy(User user) {
+        return this.user.getId().equals(user.getId());
     }
 }

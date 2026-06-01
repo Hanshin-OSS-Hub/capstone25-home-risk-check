@@ -42,3 +42,10 @@ src/main/resources/safetyscore/**/*.csv
 # keys
 *.pem
 src/main/resources/keys/
+
+# env
+.env
+.env.local
+
+# logs
+logs/

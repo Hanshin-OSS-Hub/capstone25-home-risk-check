@@ -63,6 +63,9 @@ dependencies {
 	//aws
 	implementation 'io.awspring.cloud:spring-cloud-aws-starter:4.0.2'
 	implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:4.0.2'
+
+	//actuator
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 }
 
 tasks.named('test') {

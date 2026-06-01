@@ -1,5 +1,6 @@
 package hanshin.home_risk_check.safetyscore.domain.region.service;
 
+import hanshin.home_risk_check.safetyscore.config.SafetyScoreProperties;
 import hanshin.home_risk_check.safetyscore.domain.accident.repository.TrafficRepository;
 import hanshin.home_risk_check.safetyscore.domain.cctv.repository.CctvRepository;
 import hanshin.home_risk_check.safetyscore.domain.fire.repository.FireStationRepository;
@@ -28,12 +29,12 @@ public class RegionSafetyScoreService {
     private final PoliceStationRepository policeStationRepository;
     private final FireStationRepository fireStationRepository;
 
+    private final SafetyScoreProperties properties;
+
     //  인프라 가중치 설정
     private static final double CCTV_WEIGHT = 1.0;     // CCTV 1대 = 1점
     private static final double POLICE_WEIGHT = 100.0; // 경찰서 1개 = 100점의 방어력
     private static final double FIRE_WEIGHT = 50.0;    // 소방서 1개 = 50점의 방어력
-
-
 
     @Transactional
     public void calculateAllRegionScores() {
@@ -115,6 +116,8 @@ public class RegionSafetyScoreService {
         List<Double> finalAccidentZ = new java.util.ArrayList<>();
         List<Double> combinedZScores = new java.util.ArrayList<>();
 
+        SafetyScoreProperties.MacroWeights macro = properties.macroWeights();
+
         // 정규화 및 최종 점수 산출
         for (int i = 0; i < regions.size(); i++) {
             Region region = regions.get(i);
@@ -126,9 +129,9 @@ public class RegionSafetyScoreService {
 
             // 범죄 5 사고 3 인프라 2 가중치 적용
             // 안전할수록 점수가 높도록
-            double rawScore = (infraZ * 0.2)
-                                - (crimeZ * 0.5)
-                                -(accidentZ * 0.3);
+            double rawScore = (infraZ * macro.infra())
+                                - (crimeZ * macro.crime())
+                                -(accidentZ * macro.accident());
 
             // Min-Max 정규화를 위해 저장
             finalCrimeZ.add(crimeZ);

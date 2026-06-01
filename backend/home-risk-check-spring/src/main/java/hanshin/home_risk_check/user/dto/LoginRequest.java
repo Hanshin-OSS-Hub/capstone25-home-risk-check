@@ -9,7 +9,7 @@ public record LoginRequest (
 
     @NotBlank(message = "이메일은 비어 있을 수 없습니다.")
     @Email(message = "올바른 이메일 형식이 아닙니다.")
-    @Size(max = 100, message = "이메일은 최대 100자까지 가능합니다.")
+    @Size(max = 50, message = "이메일은 최대 50자까지 가능합니다.")
     String email,
 
     @NotBlank(message = "비밀번호는 비어 있을 수 없습니다.")

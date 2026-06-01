@@ -49,11 +49,6 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
-	//mapstruct
-	implementation 'org.mapstruct:mapstruct:1.6.3'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
-
 	//spatial
 	implementation 'org.hibernate.orm:hibernate-spatial'
 	implementation 'org.locationtech.jts:jts-core:1.19.0'
@@ -64,6 +59,10 @@ dependencies {
 
 	//resilience4j
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0' //수정 필요
+
+	//aws
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter:4.0.2'
+	implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:4.0.2'
 }
 
 tasks.named('test') {

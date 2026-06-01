@@ -32,8 +32,8 @@ public class ApiResponse<T> {
      * 제네릭(T)을 사용해서 어떤 타입이든 담을 수 있음
      *
      * 예:
-     * PostResponse
-     * List<PostResponse>
+     * PostBaseResponse
+     * List<PostBaseResponse>
      * CommentResponse
      */
     private final T data;

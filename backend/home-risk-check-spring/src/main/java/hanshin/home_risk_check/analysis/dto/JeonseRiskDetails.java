@@ -1,4 +1,4 @@
-package hanshin.home_risk_check.riskanalysis.dto;
+package hanshin.home_risk_check.analysis.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * 위험도 분석 세부 지표.
  * FastAPI details 와 매핑.
  */
-public record RiskDetails(
+public record JeonseRiskDetails(
     double jeonseRatio,
     long seniorDebt,
 

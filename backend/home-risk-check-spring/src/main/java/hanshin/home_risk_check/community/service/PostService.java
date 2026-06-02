@@ -54,6 +54,11 @@ public class PostService {
         };
     }
 
+    //내가 쓴 게시글 조회 (마이페이지)
+    public Slice<Post> getMyPosts(User user, Pageable pageable) {
+        return postRepository.findAllByUser(user, pageable);
+    }
+
     //게시글 본문(카테고리, 제목, 내용) 수정
     @Transactional
     public Post updatePost(Post post, PostBaseRequest req) {

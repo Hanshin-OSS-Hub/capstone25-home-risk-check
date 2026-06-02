@@ -1,4 +1,4 @@
-package hanshin.home_risk_check.riskanalysis.infra.dto;
+package hanshin.home_risk_check.analysis.infra.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

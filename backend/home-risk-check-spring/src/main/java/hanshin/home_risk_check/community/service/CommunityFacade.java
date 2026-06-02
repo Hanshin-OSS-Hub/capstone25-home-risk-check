@@ -71,8 +71,17 @@ public class CommunityFacade {
 
     public Slice<PostSummaryResponse> getPosts(PostSearchRequest req) {
         Slice<Post> posts = postService.getPosts(req);
-        List<Post> postList = posts.getContent();
+        return toSummaries(posts);
+    }
 
+    public Slice<PostSummaryResponse> getMyPosts(User user, Pageable pageable) {
+        Slice<Post> myPosts = postService.getMyPosts(user, pageable);
+        return toSummaries(myPosts);
+    }
+
+    /* 게시글 Slice → 요약 응답 조합 (썸네일·좋아요수·댓글수 일괄 조회) */
+    private Slice<PostSummaryResponse> toSummaries(Slice<Post> posts) {
+        List<Post> postList = posts.getContent();
         Map<Long, PostImage> thumbnails = postImageService.getThumbnails(postList);
         Map<Long, Long> postLikeCounts = postLikeService.getPostLikeCounts(postList);
         Map<Long, Long> commentCounts = commentService.getCommentCounts(postList);

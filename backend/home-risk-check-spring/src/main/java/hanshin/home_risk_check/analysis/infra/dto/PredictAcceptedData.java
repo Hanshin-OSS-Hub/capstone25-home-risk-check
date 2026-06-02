@@ -1,7 +1,7 @@
-package hanshin.home_risk_check.riskanalysis.infra.dto;
+package hanshin.home_risk_check.analysis.infra.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import hanshin.home_risk_check.riskanalysis.dto.TaskStatus;
+import hanshin.home_risk_check.analysis.dto.TaskStatus;
 
 /*
  * FastAPI POST /predict 접수(202) data.

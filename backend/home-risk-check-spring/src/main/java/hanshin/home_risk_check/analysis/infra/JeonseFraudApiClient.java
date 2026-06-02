@@ -1,4 +1,4 @@
-package hanshin.home_risk_check.riskanalysis.infra;
+package hanshin.home_risk_check.analysis.infra;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import hanshin.home_risk_check.global.exception.BusinessException;
 import hanshin.home_risk_check.global.exception.ErrorCode;
-import hanshin.home_risk_check.riskanalysis.dto.RiskAnalysisResult;
-import hanshin.home_risk_check.riskanalysis.infra.dto.FastApiEnvelope;
-import hanshin.home_risk_check.riskanalysis.infra.dto.PredictAcceptedData;
-import hanshin.home_risk_check.riskanalysis.infra.dto.PredictPollData;
+import hanshin.home_risk_check.analysis.dto.JeonseFraudResult;
+import hanshin.home_risk_check.analysis.infra.dto.FastApiEnvelope;
+import hanshin.home_risk_check.analysis.infra.dto.PredictAcceptedData;
+import hanshin.home_risk_check.analysis.infra.dto.PredictPollData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -37,13 +37,13 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class RiskAnalysisApiClient {
+public class JeonseFraudApiClient {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final String baseUrl;
 
-    public RiskAnalysisApiClient(
+    public JeonseFraudApiClient(
             RestTemplate restTemplate,
             @Value("${fastapi.base-url}") String baseUrl
     ) {
@@ -83,7 +83,7 @@ public class RiskAnalysisApiClient {
                 PredictAcceptedData data = readEnvelope(response.getBody(), new TypeReference<>() {});
                 return PredictSubmission.accepted(data.taskId());
             }
-            RiskAnalysisResult cached = read(response.getBody(), RiskAnalysisResult.class);
+            JeonseFraudResult cached = read(response.getBody(), JeonseFraudResult.class);
             return PredictSubmission.cacheHit(cached);
 
         } catch (RestClientException e) {
@@ -150,12 +150,12 @@ public class RiskAnalysisApiClient {
     /*
      * 제출 결과: 캐시히트(완성 결과) 또는 접수(taskId) 중 하나.
      */
-    public record PredictSubmission(boolean cacheHit, String taskId, RiskAnalysisResult cachedResult) {
+    public record PredictSubmission(boolean cacheHit, String taskId, JeonseFraudResult cachedResult) {
         public static PredictSubmission accepted(String taskId) {
             return new PredictSubmission(false, taskId, null);
         }
 
-        public static PredictSubmission cacheHit(RiskAnalysisResult result) {
+        public static PredictSubmission cacheHit(JeonseFraudResult result) {
             return new PredictSubmission(true, null, result);
         }
     }

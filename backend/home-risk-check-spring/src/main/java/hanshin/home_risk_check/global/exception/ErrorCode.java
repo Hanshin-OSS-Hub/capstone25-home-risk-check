@@ -53,6 +53,10 @@ public enum ErrorCode {
     POLL_MULTIPLE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 400, "복수 선택이 허용되지 않는 투표입니다."),
     POLL_ALREADY_VOTED(HttpStatus.CONFLICT, 409, "이미 투표한 게시글입니다."),
 
+    // 위험도 분석
+    RISK_ANALYSIS_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "분석 이력을 찾을 수 없습니다."),
+    RISK_ANALYSIS_SNAPSHOT_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, 500, "분석 이력 데이터를 읽을 수 없습니다."),
+
     // 외부 연동
     EXTERNAL_API_FAILED(HttpStatus.SERVICE_UNAVAILABLE, 503, "외부 API 호출에 실패했습니다."),
 

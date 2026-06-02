@@ -1,4 +1,4 @@
-package hanshin.home_risk_check.riskanalysis.dto;
+package hanshin.home_risk_check.analysis.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
@@ -8,16 +8,16 @@ import java.util.List;
  * FastAPI predict 결과(result)와 매핑.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RiskAnalysisResult(
+public record JeonseFraudResult(
     String address,
     long deposit,
     long marketPrice,
     String priceSource,
     int riskScore,
     String riskLevel,
-    List<RiskFactor> majorRiskFactors,
-    HugResult hugResult,
-    RiskDetails details,
+    List<JeonseRiskFactor> majorJeonseRiskFactors,
+    JeonseHugResult jeonseHugResult,
+    JeonseRiskDetails details,
     List<String> recommendations,
-    ScoringDetail scoringDetail
+    JeonseScoringDetail jeonseScoringDetail
 ) {}

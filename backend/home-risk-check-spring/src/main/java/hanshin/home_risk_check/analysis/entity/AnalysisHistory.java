@@ -1,4 +1,4 @@
-package hanshin.home_risk_check.riskanalysis.entity;
+package hanshin.home_risk_check.analysis.entity;
 
 import hanshin.home_risk_check.user.entity.User;
 import jakarta.persistence.*;
@@ -18,17 +18,17 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(
-        name = "risk_analysis_history",
+        name = "analysis_history",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_risk_analysis_task", columnNames = {"task_id"})
+                @UniqueConstraint(name = "uk_analysis_task", columnNames = {"task_id"})
         },
         indexes = {
-                @Index(name = "idx_risk_analysis_user_created_at", columnList = "user_id, created_at")
+                @Index(name = "idx_analysis_user_created_at", columnList = "user_id, created_at")
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
-public class RiskAnalysisHistory {
+public class AnalysisHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,29 +42,19 @@ public class RiskAnalysisHistory {
     @Column(name = "task_id", nullable = false, length = 64)
     private String taskId;
 
-    @Column(name = "address", nullable = false, length = 200)
-    private String address;
-
-    @Column(name = "deposit", nullable = false)
-    private long deposit;
-
-    @Column(name = "risk_score", nullable = false)
-    private int riskScore;
-
-    @Column(name = "risk_level", nullable = false, length = 20)
-    private String riskLevel;
+    // 분석 당시 위험도+안전등급 합본(AnalysisSnapshot)의 JSON 스냅샷.
+    // 목록 요약·상세 모두 이 JSON을 역직렬화해 사용 (요약 필드 중복 컬럼 없음).
+    @Column(name = "result_json", nullable = false, columnDefinition = "TEXT")
+    private String resultJson;
 
     @Column(name = "created_at", nullable = false)
     @CreatedDate
     private LocalDateTime createdAt;
 
     @Builder
-    public RiskAnalysisHistory(User user, String taskId, String address, long deposit, int riskScore, String riskLevel) {
+    public AnalysisHistory(User user, String taskId, String resultJson) {
         this.user = user;
         this.taskId = taskId;
-        this.address = address;
-        this.deposit = deposit;
-        this.riskScore = riskScore;
-        this.riskLevel = riskLevel;
+        this.resultJson = resultJson;
     }
 }

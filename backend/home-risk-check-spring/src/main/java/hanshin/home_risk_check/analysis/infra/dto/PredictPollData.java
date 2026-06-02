@@ -1,8 +1,8 @@
-package hanshin.home_risk_check.riskanalysis.infra.dto;
+package hanshin.home_risk_check.analysis.infra.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import hanshin.home_risk_check.riskanalysis.dto.RiskAnalysisResult;
-import hanshin.home_risk_check.riskanalysis.dto.TaskStatus;
+import hanshin.home_risk_check.analysis.dto.JeonseFraudResult;
+import hanshin.home_risk_check.analysis.dto.TaskStatus;
 
 /*
  * FastAPI GET /predict/{task_id} data.
@@ -15,6 +15,6 @@ public record PredictPollData(
     String taskId,
     TaskStatus status,
     Integer progress,
-    RiskAnalysisResult result,
+    JeonseFraudResult result,
     String error
 ) {}

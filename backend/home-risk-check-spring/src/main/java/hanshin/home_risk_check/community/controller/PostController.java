@@ -12,6 +12,7 @@ import hanshin.home_risk_check.global.dto.ApiResponse;
 import hanshin.home_risk_check.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -48,6 +49,19 @@ public class PostController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success(HttpStatus.OK.value(), "게시글 목록 조회 성공", response));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<Slice<PostSummaryResponse>>> getMyPosts(
+            @AuthenticationPrincipal CustomUserDetails currentUser,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Slice<PostSummaryResponse> response =
+                communityFacade.getMyPosts(currentUser.getUser(), PageRequest.of(page, size));
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(HttpStatus.OK.value(), "내 게시글 목록 조회 성공", response));
     }
 
     @GetMapping("/{postId}")

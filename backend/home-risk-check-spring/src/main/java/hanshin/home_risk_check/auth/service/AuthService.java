@@ -32,10 +32,14 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserResponseMapper userResponseMapper;
     private final RefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
     private final JwtUtil jwtUtil;
 
     @Transactional
     public UserResponse signup(SignupRequest signupRequest) {
+        // 이메일 인증 완료 여부 확인
+        emailVerificationService.ensureVerified(signupRequest.email());
+
         if (userRepository.existsByEmail(signupRequest.email())) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
@@ -52,6 +56,7 @@ public class AuthService {
                         .build();
 
         User saved = userRepository.save(user);
+        emailVerificationService.clearVerified(signupRequest.email());
         return userResponseMapper.toResponse(saved);
     }
 

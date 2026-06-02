@@ -42,16 +42,19 @@ public class RiskAnalysisService {
             List<MultipartFile> ledgerFiles,
             List<MultipartFile> registryFiles
     ) {
+        log.info("위험도 분석 요청 - userId={}", user.getId());
         PredictSubmission submission = apiClient.submitPredict(
                 request.deposit(), request.address(), ledgerFiles, registryFiles
         );
 
         // 캐시히트: 이미 완료된 결과 → 안전등급 합쳐 즉시 반환 (taskId 없음 → 이력 저장 안 함)
         if (submission.cacheHit()) {
+            log.info("위험도 분석 캐시 히트 - userId={}", user.getId());
             return buildCompleted(null, submission.cachedResult(), user);
         }
 
         // 접수: 폴링용 taskId 반환
+        log.info("위험도 분석 접수 - taskId={}, userId={}", submission.taskId(), user.getId());
         return RiskAnalysisStatusResponse.builder()
                 .taskId(submission.taskId())
                 .status(TaskStatus.PENDING)
@@ -115,6 +118,8 @@ public class RiskAnalysisService {
                     .riskScore(result.riskScore())
                     .riskLevel(result.riskLevel())
                     .build());
+            log.info("위험도 분석 완료 및 이력 저장 - taskId={}, userId={}, riskLevel={}",
+                    taskId, user.getId(), result.riskLevel());
         } catch (DataIntegrityViolationException e) {
             // 동시 폴링으로 이미 저장됨 — 무시
             log.debug("이미 저장된 분석 이력: taskId={}", taskId);

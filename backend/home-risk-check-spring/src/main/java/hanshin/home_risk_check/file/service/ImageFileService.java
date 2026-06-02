@@ -6,6 +6,7 @@ import hanshin.home_risk_check.file.storage.FileStorage;
 import hanshin.home_risk_check.global.exception.BusinessException;
 import hanshin.home_risk_check.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -44,7 +46,9 @@ public class ImageFileService {
                                        .contentType(file.getContentType())
                                        .build();
 
-        return imageFileRepository.save(imageFile);
+        ImageFile saved = imageFileRepository.save(imageFile);
+        log.debug("이미지 파일 저장 - imageFileId={}", saved.getId());
+        return saved;
     }
 
     @Transactional
@@ -68,7 +72,9 @@ public class ImageFileService {
                                               })
                                               .toList();
 
-        return imageFileRepository.saveAll(imageFiles);
+        List<ImageFile> saved = imageFileRepository.saveAll(imageFiles);
+        log.debug("이미지 파일 {}건 저장", saved.size());
+        return saved;
     }
 
     @Transactional
@@ -79,6 +85,7 @@ public class ImageFileService {
         String storageKey = imageFile.getStorageKey();
         imageFileRepository.delete(imageFile);
         deleteStoragesAfterCommit(List.of(storageKey));
+        log.debug("이미지 파일 삭제 - imageFileId={}", imageFile.getId());
     }
 
     @Transactional
@@ -92,6 +99,7 @@ public class ImageFileService {
 
         imageFileRepository.deleteAll(imageFiles);
         deleteStoragesAfterCommit(storageKeys);
+        log.debug("이미지 파일 {}건 삭제", imageFiles.size());
     }
 
     private void validateImageFile(MultipartFile file) {

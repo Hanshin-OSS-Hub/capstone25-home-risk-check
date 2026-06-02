@@ -12,11 +12,13 @@ import hanshin.home_risk_check.user.entity.User;
 import hanshin.home_risk_check.user.mapper.UserResponseMapper;
 import hanshin.home_risk_check.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -41,6 +43,7 @@ public class UserService {
         updateNickname(user, request.nicknameUpdateRequest());
         updatePassword(user, request.passwordUpdateRequest());
 
+        log.info("회원 정보 수정 - userId={}", userId);
         return userResponseMapper.toResponse(user);
     }
 
@@ -74,6 +77,7 @@ public class UserService {
         userRepository.flush(); //flush로 user FK 변경 먼저 DB 반영
         imageFileService.delete(oldImageFile);
 
+        log.info("프로필 이미지 변경 - userId={}", userId);
         return userResponseMapper.toResponse(user);
     }
 
@@ -92,6 +96,7 @@ public class UserService {
         userRepository.flush(); //flush로 user FK 변경 먼저 DB 반영
         imageFileService.delete(oldImageFile);
 
+        log.info("프로필 이미지 삭제 - userId={}", userId);
         return userResponseMapper.toResponse(user);
     }
 
@@ -101,5 +106,6 @@ public class UserService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         userRepository.deleteById(userId);
+        log.info("회원 탈퇴 - userId={}", userId);
     }
 }

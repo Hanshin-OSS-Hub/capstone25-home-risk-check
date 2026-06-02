@@ -9,6 +9,7 @@ import hanshin.home_risk_check.community.mapper.PostSummaryResponseMapper;
 import hanshin.home_risk_check.community.util.AuthorValidator;
 import hanshin.home_risk_check.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -41,6 +43,7 @@ public class CommunityFacade {
         postPlaceService.createPostPlace(post, req.postPlaceRequest());
         postPollService.createPostPoll(post, req.postPollRequest());
         postImageService.createPostImages(post, images);
+        log.info("게시글 작성 - postId={}, userId={}", post.getId(), user.getId());
         return getPost(user, post.getId());
     }
 
@@ -87,6 +90,7 @@ public class CommunityFacade {
         postPlaceService.updatePostPlace(post, postPlace, req.postPlaceRequest());
         postImageService.updatePostImages(post, req.deletePostImageIds(), images);
 
+        log.info("게시글 수정 - postId={}, userId={}", postId, user.getId());
         return getPost(user, postId);
     }
 
@@ -105,6 +109,7 @@ public class CommunityFacade {
         postPlaceService.delete(postPlace);
         commentService.deleteComments(post);
         postService.delete(post, user);
+        log.info("게시글 삭제 - postId={}, userId={}", postId, user.getId());
     }
 
     // ─────────────────────────── 게시글 좋아요 ───────────────────────────
@@ -161,6 +166,7 @@ public class CommunityFacade {
     public CommentResponse createComment(Long postId, User user, CommentCreateRequest req) {
         Comment comment = commentService.createComment(postId, user, req);
         boolean isWrittenByMe = commentService.isWrittenByMe(comment, user);
+        log.info("댓글 작성 - commentId={}, postId={}, userId={}", comment.getId(), postId, user.getId());
         return commentResponseMapper.toCommentResponse(comment, isWrittenByMe, 0L);
     }
 
@@ -169,5 +175,6 @@ public class CommunityFacade {
         Comment comment = commentService.getComment(commentId);
         AuthorValidator.validate(comment.getUser(), user);
         commentService.deleteComment(comment);
+        log.info("댓글 삭제 - commentId={}, userId={}", commentId, user.getId());
     }
 }

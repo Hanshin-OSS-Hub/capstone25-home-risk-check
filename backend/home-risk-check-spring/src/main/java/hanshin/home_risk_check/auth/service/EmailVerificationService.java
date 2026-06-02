@@ -6,9 +6,11 @@ import hanshin.home_risk_check.global.exception.BusinessException;
 import hanshin.home_risk_check.global.exception.ErrorCode;
 import hanshin.home_risk_check.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
@@ -29,6 +31,7 @@ public class EmailVerificationService {
         String code = generateCode();
         verificationStore.saveCode(email, code);
         emailSender.send(email, buildSubject(), buildBody(code));
+        log.info("이메일 인증 코드 발송 - email={}", email);
     }
 
     public void verifyCode(String email, String code) {
@@ -36,11 +39,13 @@ public class EmailVerificationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.VERIFICATION_CODE_NOT_FOUND));
 
         if (!savedCode.equals(code)) {
+            log.warn("이메일 인증 코드 불일치 - email={}", email);
             throw new BusinessException(ErrorCode.INVALID_VERIFICATION_CODE);
         }
 
         verificationStore.deleteCode(email);
         verificationStore.markVerified(email);
+        log.info("이메일 인증 완료 - email={}", email);
     }
 
     /* 회원가입 시 인증 완료 여부 확인 */

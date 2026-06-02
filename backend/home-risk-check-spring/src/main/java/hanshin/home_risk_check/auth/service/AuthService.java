@@ -15,6 +15,7 @@ import hanshin.home_risk_check.user.entity.User;
 import hanshin.home_risk_check.user.repository.UserRepository;
 import hanshin.home_risk_check.user.mapper.UserResponseMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -59,6 +61,7 @@ public class AuthService {
 
         User saved = userRepository.save(user);
         emailVerificationService.clearVerified(signupRequest.email());
+        log.info("회원가입 완료 - userId={}", saved.getId());
         return userResponseMapper.toResponse(saved);
     }
 
@@ -75,11 +78,13 @@ public class AuthService {
                                                    .build();
 
         refreshTokenService.save(userDetails.getUserId(), refreshToken);
+        log.info("로그인 성공 - userId={}", userDetails.getUserId());
         return loginResponseMapper.toLoginResponse(userDetails.getUser(), tokenResponse);
     }
 
     public void logout(Long userId) {
         refreshTokenService.revoke(userId);
+        log.info("로그아웃 - userId={}", userId);
     }
 
     public TokenResponse reissue(String refreshToken){
@@ -104,6 +109,7 @@ public class AuthService {
 
         if (!refreshTokenService.matches(userId, refreshToken)) {
             refreshTokenService.revoke(userId);
+            log.warn("Refresh Token 불일치로 재발급 거부 - userId={}", userId);
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
@@ -115,6 +121,7 @@ public class AuthService {
         TokenResponse tokenResponse = new TokenResponse(newAccessToken, newRefreshToken);
 
         refreshTokenService.save(user.getId(), newRefreshToken);
+        log.info("토큰 재발급 완료 - userId={}", user.getId());
 
         return tokenResponse;
     }

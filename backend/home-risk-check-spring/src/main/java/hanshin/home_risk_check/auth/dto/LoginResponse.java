@@ -1,6 +1,5 @@
-package hanshin.home_risk_check.user.dto;
+package hanshin.home_risk_check.auth.dto;
 
-import hanshin.home_risk_check.auth.dto.TokenResponse;
 import lombok.Builder;
 
 @Builder

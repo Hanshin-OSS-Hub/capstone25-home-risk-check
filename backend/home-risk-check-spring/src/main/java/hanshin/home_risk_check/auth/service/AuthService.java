@@ -1,12 +1,13 @@
 package hanshin.home_risk_check.auth.service;
 
 import hanshin.home_risk_check.auth.dto.TokenResponse;
+import hanshin.home_risk_check.auth.mapper.LoginResponseMapper;
 import hanshin.home_risk_check.global.exception.BusinessException;
 import hanshin.home_risk_check.global.exception.ErrorCode;
 import hanshin.home_risk_check.global.security.JwtUtil;
-import hanshin.home_risk_check.user.dto.LoginRequest;
-import hanshin.home_risk_check.user.dto.LoginResponse;
-import hanshin.home_risk_check.user.dto.SignupRequest;
+import hanshin.home_risk_check.auth.dto.LoginRequest;
+import hanshin.home_risk_check.auth.dto.LoginResponse;
+import hanshin.home_risk_check.auth.dto.SignupRequest;
 import hanshin.home_risk_check.user.dto.UserResponse;
 import hanshin.home_risk_check.user.entity.CustomUserDetails;
 import hanshin.home_risk_check.user.entity.Role;
@@ -31,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final UserResponseMapper userResponseMapper;
+    private final LoginResponseMapper loginResponseMapper;
     private final RefreshTokenService refreshTokenService;
     private final EmailVerificationService emailVerificationService;
     private final JwtUtil jwtUtil;
@@ -73,13 +75,7 @@ public class AuthService {
                                                    .build();
 
         refreshTokenService.save(userDetails.getUserId(), refreshToken);
-
-        return LoginResponse.builder()
-                            .token(tokenResponse)
-                            .email(userDetails.getEmail())
-                            .nickname(userDetails.getNickname())
-                            .profileImageUrl(userDetails.getProfileImageFile().getStorageKey())
-                            .build();
+        return loginResponseMapper.toLoginResponse(userDetails.getUser(), tokenResponse);
     }
 
     public void logout(Long userId) {

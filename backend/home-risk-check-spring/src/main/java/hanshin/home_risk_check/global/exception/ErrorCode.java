@@ -26,6 +26,12 @@ public enum ErrorCode {
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, 409, "이미 가입된 이메일입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, 409, "이미 사용 중인 닉네임입니다."),
 
+    // 이메일 인증
+    VERIFICATION_CODE_NOT_FOUND(HttpStatus.BAD_REQUEST, 400, "인증 코드가 만료되었거나 발급되지 않았습니다."),
+    INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, 400, "인증 코드가 일치하지 않습니다."),
+    EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, 400, "이메일 인증이 완료되지 않았습니다."),
+    EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "인증 메일 발송에 실패했습니다."),
+
     // 게시글/댓글
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "댓글을 찾을 수 없습니다."),

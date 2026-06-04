@@ -6,8 +6,7 @@ import {
     FileUploadList,
     FileUploadTrigger,
 } from "@/components/ui/file-upload";
-import { Button } from "@/components/ui/button.tsx";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import type { Ref } from "react";
 
 interface PostImageUploaderProps {
@@ -43,28 +42,44 @@ export default function PostImageUploader({
             multiple
         >
             <FileUploadTrigger ref={triggerRef} className="hidden" />
-            <FileUploadList className="grid grid-rows-1 auto-cols-[20%] grid-flow-col overflow-x-scroll no-scrollbar pt-2.5">
-                {images.map((image) => (
-                    <FileUploadItem
-                        key={`${image.name}-${image.size}-${image.lastModified}`}
-                        value={image}
-                        className="relative aspect-square p-0 border-none"
-                    >
-                        <FileUploadItemPreview
-                            className="size-full rounded-xl cursor-pointer"
-                            onClick={() => handlePreview(image)}
-                        />
-                        <FileUploadItemDelete asChild>
-                            <Button
-                                size="icon"
-                                className="absolute -top-2 -right-2 size-5 cursor-pointer"
+            {images.length > 0 && (
+                <FileUploadList className="flex flex-row gap-2 overflow-x-auto no-scrollbar">
+                    {images.map((image, idx) => (
+                        <FileUploadItem
+                            key={`${image.name}-${image.size}-${image.lastModified}`}
+                            value={image}
+                            className="relative size-26 shrink-0 border-none p-0"
+                        >
+                            <FileUploadItemPreview
+                                className="size-full cursor-pointer rounded-lg"
+                                onClick={() => handlePreview(image)}
+                            />
+                            <span className="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                                {idx + 1}/{images.length}
+                            </span>
+                            <FileUploadItemDelete asChild>
+                                <button
+                                    type="button"
+                                    className="absolute right-1.5 top-1.5 flex size-5 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white"
+                                >
+                                    <X className="size-3" />
+                                </button>
+                            </FileUploadItemDelete>
+                        </FileUploadItem>
+                    ))}
+                    {images.length < maxFiles && (
+                        <FileUploadTrigger asChild>
+                            <button
+                                type="button"
+                                className="flex size-26 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border text-muted-foreground hover:bg-muted"
                             >
-                                <X className="size-3" />
-                            </Button>
-                        </FileUploadItemDelete>
-                    </FileUploadItem>
-                ))}
-            </FileUploadList>
+                                <Plus className="size-5" />
+                                <span className="text-xs">추가</span>
+                            </button>
+                        </FileUploadTrigger>
+                    )}
+                </FileUploadList>
+            )}
         </FileUpload>
     );
 }

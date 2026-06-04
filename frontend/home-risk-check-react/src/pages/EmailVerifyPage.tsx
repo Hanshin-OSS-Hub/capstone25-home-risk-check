@@ -1,8 +1,9 @@
-import {Button} from '@/components/ui/button'
-import InputCode from '@/components/InputCode'
 import {useState} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {signupStore} from '@/features/auth/stores/signupStore'
+import {Button} from '@/components/ui/button'
+import InputCode from '@/components/form/InputCode'
+import {AuthShell} from '@/features/auth/components/AuthShell'
+import {useSignupStore} from '@/features/auth/stores/useSignupStore'
 import {ROUTES} from '@/constants/routes'
 // import {authApi} from '@/features/auth/api' // 백엔드 연동 시 활성화
 
@@ -10,14 +11,13 @@ export default function EmailVerifyPage() {
     const navigate = useNavigate()
     const [code, setCode] = useState('')
     const [codeError, setCodeError] = useState('')
-    const { email, setIsEmailVerified } = signupStore()
+    const {email, setIsEmailVerified} = useSignupStore()
 
     const verifyEmailCode = async () => {
         if (!code) {
             setCodeError('코드를 입력해주세요')
             return
         }
-
         try {
             // await authApi.verifyEmailCode({ email, code })
             setIsEmailVerified(true)
@@ -38,35 +38,51 @@ export default function EmailVerifyPage() {
     }
 
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-col items-center">
-                <span className="mb-2 font-medium">이메일 본인 인증</span>
-                <span>
-                            <span className="font-medium">{email}</span>
-                    &nbsp;주소로
-                        </span>
-                <span>전송된 코드를 입력해주세요</span>
-            </div>
-            <div>
-                <InputCode
-                    value={code}
-                    onChange={(v) => {
-                        setCode(v)
-                        setCodeError('')
-                    }}
-                />
-                {codeError && (
-                    <span className="font-medium text-xs text-red-700">{codeError}</span>
-                )}
-            </div>
-            <span className="mx-auto text-xs underline cursor-pointer w-fit"
-                  onClick={handleResend}>코드 재전송</span>
-            <Button
-                className="h-12 rounded-xl w-full cursor-pointer"
-                onClick={verifyEmailCode}
+        <AuthShell
+            title="이메일 인증"
+            description={
+                <>
+                    <span className="font-medium text-foreground">{email || '입력하신 이메일'}</span>
+                    {' '}주소로 전송된<br/>6자리 코드를 입력해주세요
+                </>
+            }
+        >
+            <form
+                className="flex flex-col items-center gap-6"
+                onSubmit={e => {
+                    e.preventDefault()
+                    verifyEmailCode()
+                }}
             >
-                인증하기
-            </Button>
-        </div>
+                <div className="flex flex-col items-center gap-2">
+                    <InputCode
+                        value={code}
+                        onChange={v => {
+                            setCode(v)
+                            setCodeError('')
+                        }}
+                    />
+                    {codeError && (
+                        <span className="text-xs text-destructive">{codeError}</span>
+                    )}
+                </div>
+
+                <span className="ml-auto text-xs font-medium -mt-4">
+                    03:23
+                </span>
+
+                <button
+                    type="button"
+                    onClick={handleResend}
+                    className="text-xs text-muted-foreground underline-offset-4 hover:underline cursor-pointer"
+                >
+                    코드 재전송
+                </button>
+
+                <Button type="submit" className="w-full cursor-pointer">
+                    인증하기
+                </Button>
+            </form>
+        </AuthShell>
     )
 }

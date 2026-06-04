@@ -1,11 +1,10 @@
 import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import InputBasic from "@/components/InputBasic.tsx"
+import InputBasic from "@/components/form/InputBasic.tsx"
 import AddressSearchTip from "@/features/address/components/AddressSearchTip"
 import AddressSearchResults from "@/features/address/components/AddressSearchResults"
 import type { JusoItem } from "@/features/address/types"
 import { validateKeyword } from "@/features/address/utils/validateKeyword.ts"
-
 export default function AddressSearchPage() {
     const [keyword, setKeyword] = useState("")
     const navigate = useNavigate()

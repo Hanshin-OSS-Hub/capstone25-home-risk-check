@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { communityCreateStore } from '@/features/community/stores/communityCreateStore'
+import { useCommunityCreateStore } from '@/features/community/stores/useCommunityCreateStore'
 import type { Poll } from '@/features/community/types'
 
 interface Args {
@@ -21,7 +21,7 @@ const createEmptyPoll = (): Poll => ({
  * - 미커밋 unmount: isNew 면 store.poll = null 로 폐기
  */
 export function usePollDraft({ initial }: Args) {
-    const setPoll = communityCreateStore(s => s.setPoll)
+    const setPoll = useCommunityCreateStore(s => s.setPoll)
     const isNewRef = useRef(initial === null)
     const [draft, setDraft] = useState<Poll>(() => initial ?? createEmptyPoll())
     const committedRef = useRef(false)

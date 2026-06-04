@@ -46,7 +46,7 @@ export default function AddressSearchResults({ keyword, onSelect }: Props) {
     return (
         <>
             {isLoading || isDebouncing ? (
-                <p className="text-center py-6 text-gray-400">
+                <p className="text-center py-6 text-muted-foreground">
                     검색 중...
                 </p>
             ) : results.length > 0 ? (
@@ -55,26 +55,26 @@ export default function AddressSearchResults({ keyword, onSelect }: Props) {
                         <div
                             key={`${item.roadAddr}-${idx}`}
                             onClick={() => onSelect(item)}
-                            className="p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
+                            className="p-4 cursor-pointer hover:bg-muted active:bg-muted-foreground/10"
                         >
                             <p className="font-medium text-sm">
                                 {item.roadAddr}
                             </p>
 
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                                 {item.jibunAddr}
                             </p>
                         </div>
                     ))}
                 </div>
             ) : keyword && !isFetching ? (
-                <p className="text-center py-6 text-gray-400">
+                <p className="text-center py-6 text-muted-foreground">
                     검색 결과가 없습니다
                 </p>
             ) : null}
 
             {isFetchingNextPage && (
-                <p className="text-center py-6 text-gray-400">
+                <p className="text-center py-6 text-muted-foreground">
                     더 불러오는 중...
                 </p>
             )}

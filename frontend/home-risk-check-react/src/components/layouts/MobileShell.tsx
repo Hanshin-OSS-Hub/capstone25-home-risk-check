@@ -5,9 +5,9 @@ import { Outlet } from 'react-router-dom'
 export function MobileShell() {
     return (
         <div className="px-4 my-6">
-            <div className="flex flex-col gap-6 max-w-(--breakpoint-sm) mx-auto w-full">
+            <main className="flex flex-col gap-6 max-w-(--breakpoint-sm) mx-auto w-full">
                 <Outlet />
-            </div>
+            </main>
         </div>
         // <BottomTabBar/>
     )

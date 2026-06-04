@@ -3,34 +3,28 @@ import type { ComponentProps } from "react";
 import {
     NavigationMenu,
     NavigationMenuItem,
-    NavigationMenuLink,
     NavigationMenuList,
-    navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { ROUTES } from "@/constants/routes";
+import {Button} from "@/components/ui/button.tsx";
 
 export const NavMenu = (props: ComponentProps<typeof NavigationMenu>) => (
     <NavigationMenu {...props}>
         <NavigationMenuList className="space-x-0 data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-start data-[orientation=vertical]:justify-start">
             <NavigationMenuItem>
-                <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                    <Link to={ROUTES.home}>홈</Link>
-                </NavigationMenuLink>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-                <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                <Button asChild size="sm" variant="ghost">
                     <Link to={ROUTES.analysis}>AI 분석</Link>
-                </NavigationMenuLink>
+                </Button>
             </NavigationMenuItem>
             <NavigationMenuItem>
-                <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                <Button asChild size="sm" variant="ghost">
                     <Link to={ROUTES.community}>커뮤니티</Link>
-                </NavigationMenuLink>
+                </Button>
             </NavigationMenuItem>
             <NavigationMenuItem>
-                <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                <Button asChild size="sm" variant="ghost">
                     <Link to="#">부동산 정보</Link>
-                </NavigationMenuLink>
+                </Button>
             </NavigationMenuItem>
         </NavigationMenuList>
     </NavigationMenu>

@@ -24,6 +24,11 @@ export function CommentList({ comments, openReplyId, replyRef, onReplyToggle }: 
                             <CommentItem comment={reply} isReply />
                         </div>
                     ))}
+                    <div className="flex items-center gap-2 ml-20">
+                        <div className="w-10 border-t border-border" />
+                            <div className="cursor-pointer text-xs font-medium text-muted-foreground">답글 10개 더보기</div>
+                        <div className="w-10 border-t border-border" />
+                    </div>
                     {openReplyId === comment.commentId && (
                         <CommentComposer textareaRef={replyRef} />
                     )}

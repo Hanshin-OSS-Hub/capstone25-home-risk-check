@@ -8,13 +8,12 @@ interface InputCodeProps {
 
 const InputCode = ({ value, onChange }: InputCodeProps) => {
     return (
-        <div className='w-full flex flex-col gap-2'>
-            {/*<span className="font-medium text-xs ">인증 코드</span>*/}
+        <div className='flex flex-col gap-2'>
             <InputOTP maxLength={6} value={value} onChange={(v) => {
-                const filtered = v.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+                const filtered = v.replace(/[^0-9]/g, '').toUpperCase()
                 onChange(filtered)
-            }} className="w-full" inputMode="text" pattern="[A-Za-z0-9]*">
-                <InputOTPGroup className='w-full gap-2 *:data-[slot=input-otp-slot]:bg-muted *:data-[slot=input-otp-slot]:flex-1 *:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:border-transparent *:data-[slot=input-otp-slot]:shadow-none'>
+            }} inputMode="text" pattern="[0-9]*">
+                <InputOTPGroup className='justify-center gap-5 *:data-[slot=input-otp-slot]:bg-muted *:data-[slot=input-otp-slot]:size-12 *:data-[slot=input-otp-slot]:rounded-lg *:data-[slot=input-otp-slot]:border *:data-[slot=input-otp-slot]:border-transparent *:data-[slot=input-otp-slot]:text-lg *:data-[slot=input-otp-slot]:shadow-none'>
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
                     <InputOTPSlot index={2} />

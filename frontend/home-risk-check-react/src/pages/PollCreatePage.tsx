@@ -1,12 +1,12 @@
-import InputBasic from "@/components/InputBasic.tsx";
+import InputBasic from "@/components/form/InputBasic.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
-import {communityCreateStore} from "@/features/community/stores/communityCreateStore";
+import {useCommunityCreateStore} from "@/features/community/stores/useCommunityCreateStore";
 import {usePollDraft} from "@/features/community/hooks/usePollDraft";
 import {useNavigate} from "react-router-dom";
 
 export default function PollCreatePage() {
-    const poll = communityCreateStore(s => s.poll)
+    const poll = useCommunityCreateStore(s => s.poll)
     const { draft: localPoll, setDraft: setLocalPoll, commit } = usePollDraft({ initial: poll })
     const navigate = useNavigate()
 
@@ -43,6 +43,9 @@ export default function PollCreatePage() {
 
     return (
         <>
+            <div className="font-medium">
+                <h2>투표 만들기</h2>
+            </div>
             {localPoll && (
                 <div className="flex flex-col gap-2">
                     {localPoll.options.map((opt, index) => (
@@ -64,27 +67,31 @@ export default function PollCreatePage() {
                     ))}
 
                     <Button
-                        className="rounded-xl cursor-pointer"
+                        variant="secondary"
+                        className="rounded-lg cursor-pointer"
                         onClick={addOption}
                         disabled={localPoll.options.length >= 5}
                     >
                         + 항목 추가
                     </Button>
 
+                    <div className="text-center text-xs text-muted-foreground">
+                        <span>투표는 생성 후 수정&middot;삭제할 수 없어요</span>
+                    </div>
+
                     <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-2">
-                            복수 선택 가능
-                            <Switch
-                                aria-label='Medium switch'
-                                className='data-[size=default]:h-6 data-[size=default]:w-10 [&_span]:group-data-[size=default]/switch:size-5 data-[state=checked]:[&_span]:translate-x-[19px] data-[state=unchecked]:[&_span]:translate-x-[2px] cursor-pointer'
-                                checked={localPoll?.multipleChoice ?? false}
-                                onCheckedChange={(checked) =>
-                                    setLocalPoll(prev => prev && { ...prev, multipleChoice: checked })
-                                }
-                            />
+                        <div className="flex items-center gap-2 cursor-pointer">
+                            <Switch checked={localPoll?.multipleChoice ?? false}
+                                    onCheckedChange={(checked) =>
+                                        setLocalPoll(prev => prev && { ...prev, multipleChoice: checked })
+                                    }
+                                    id="multiple"
+                                    className='data-[size=default]:h-6.5 data-[size=default]:w-12 [&_span]:group-data-[size=default]/switch:size-5 data-[state=checked]:[&_span]:translate-x-6 data-[state=unchecked]:[&_span]:translate-x-0.5 cursor-pointer'/>
+                            <label className="font-medium text-sm cursor-pointer" htmlFor="multiple">복수 선택 허용</label>
                         </div>
                         <Button
-                            className="rounded-xl cursor-pointer"
+                            className="rounded-lg cursor-pointer"
+                            size="sm"
                             onClick={handleDone}
                         >
                             완료

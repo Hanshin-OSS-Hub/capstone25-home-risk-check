@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button.tsx";
-import { Vote, X } from "lucide-react";
+import { X } from "lucide-react";
 import { showToast } from "@/lib/notify.ts";
 import type { Poll } from "@/features/community/types";
 
@@ -20,32 +20,25 @@ export default function PostPollPreview({ poll, onRemove }: PostPollPreviewProps
     };
 
     return (
-        <div className="border rounded-xl px-4 py-3">
-            <div className="flex items-center justify-between text-sm">
+        <div className="rounded-lg p-3 bg-muted">
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                    <Vote size={20} />
-                    <span className="font-medium">투표</span>
-                    <span className="text-xs">
-                        &middot; {poll.multipleChoice ? "복수 선택 가능" : "1개 선택 가능"}
-                    </span>
+                    {/*<Vote className="size-5" />*/}
+                    <span className="text-base font-medium">투표</span>
                 </div>
                 <Button
                     size="icon"
-                    className="size-5 z-10 cursor-pointer"
+                    variant="ghost"
+                    className="size-7 cursor-pointer text-muted-foreground hover:text-foreground"
                     onClick={handleRemove}
                 >
-                    <X className="size-3" />
+                    <X className="size-4" />
                 </Button>
             </div>
-            <div className="flex flex-col gap-2 mt-4">
-                {poll.options.map((opt) => (
-                    <div
-                        key={opt.id}
-                        className="px-4 py-2 rounded-xl bg-gray-100 text-sm"
-                    >
-                        {opt.text || "항목을 입력해주세요"}
-                    </div>
-                ))}
+            <div className="flex items-center gap-1">
+                <span className="font-medium text-xs text-muted-foreground">{poll.multipleChoice ? "복수 선택 가능" : "1개 선택 가능"}</span>
+                <span>&middot;</span>
+                <span className="font-medium text-xs text-muted-foreground">{poll.options.length}개 항목</span>
             </div>
         </div>
     );

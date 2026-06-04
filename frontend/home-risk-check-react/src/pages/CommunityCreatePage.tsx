@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button.tsx";
 import { showToast } from "@/lib/notify.ts";
-import { communityCreateStore } from "@/features/community/stores/communityCreateStore";
+import { useCommunityCreateStore } from "@/features/community/stores/useCommunityCreateStore";
 import { useDirtyBlocker } from "@/hooks/use-dirty-blocker";
 import { useCreatePost } from "@/features/community/hooks/useCreatePost";
 import { ROUTES } from "@/constants/routes";
@@ -14,8 +14,8 @@ import PostPlacePreview from "@/features/community/components/PostPlacePreview";
 import PostPollPreview from "@/features/community/components/PostPollPreview";
 
 export default function CommunityCreatePage() {
-    const { category, title, content, poll, images, placeLat, placeLng } =
-        communityCreateStore(
+    const { category, title, content, poll, images, placeLat, placeLng, placeName, placeAddress } =
+        useCommunityCreateStore(
             useShallow(s => ({
                 category: s.category,
                 title: s.title,
@@ -24,12 +24,15 @@ export default function CommunityCreatePage() {
                 images: s.images,
                 placeLat: s.placeLat,
                 placeLng: s.placeLng,
+                placeName: s.placeName,
+                placeAddress: s.placeAddress,
             })),
         );
     const {
         setCategory, setTitle, setContent,
-        setPoll, setImages, setPlaceLat, setPlaceLng, reset,
-    } = communityCreateStore.getState();
+        setPoll, setImages, setPlaceLat, setPlaceLng,
+        setPlaceName, setPlaceAddress, reset,
+    } = useCommunityCreateStore.getState();
 
     const navigate = useNavigate();
     const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -83,11 +86,13 @@ export default function CommunityCreatePage() {
 
             {placeLat !== null && placeLng !== null && (
                 <PostPlacePreview
-                    lat={placeLat}
-                    lng={placeLng}
+                    name={placeName}
+                    address={placeAddress}
                     onRemove={() => {
                         setPlaceLat(null)
                         setPlaceLng(null)
+                        setPlaceName(null)
+                        setPlaceAddress(null)
                     }}
                 />
             )}
@@ -99,8 +104,11 @@ export default function CommunityCreatePage() {
                 />
             }
 
-            <div className="flex justify-end">
-                <Button className="rounded-xl cursor-pointer" onClick={handleSubmit} disabled={createPost.isPending}>
+            <div className="flex justify-end gap-2">
+                <Button className="rounded-lg cursor-pointer " variant="secondary" onClick={() => navigate(ROUTES.community)} disabled={createPost.isPending}>
+                    취소
+                </Button>
+                <Button className="rounded-lg cursor-pointer" onClick={handleSubmit} disabled={createPost.isPending}>
                     글쓰기
                 </Button>
             </div>

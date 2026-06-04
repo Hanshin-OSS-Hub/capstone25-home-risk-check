@@ -8,7 +8,7 @@ export default function PrivateLayout() {
 
     if (isLoading) return (
         <div className="flex items-center justify-center h-screen">
-            <span className="text-gray-400">로딩 중...</span>
+            <span className="text-muted-foreground">로딩 중...</span>
         </div>
     )
 

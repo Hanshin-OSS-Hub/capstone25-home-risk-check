@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select.tsx";
-import InputBasic from "@/components/InputBasic.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { Image, MapPin, Vote } from "lucide-react";
 import { COMMUNITY_CATEGORIES } from "@/constants/category.ts";
@@ -38,7 +38,7 @@ export default function PostCreateForm({
     return (
         <div className="flex flex-col gap-2">
             <Select value={category} onValueChange={onCategoryChange}>
-                <SelectTrigger className="rounded-xl w-full max-w-48 h-12!">
+                <SelectTrigger className="w-full h-11! rounded-none border-0 border-b border-border bg-transparent px-0 shadow-none">
                     <SelectValue placeholder="카테고리를 선택해주세요" />
                 </SelectTrigger>
                 <SelectContent>
@@ -55,45 +55,33 @@ export default function PostCreateForm({
                 </SelectContent>
             </Select>
 
-            <InputBasic
-                placeholder="제목을 입력해주세요"
+            {/* 제목 — 배경 없는 입력 (구분선만) */}
+            <input
                 value={title}
-                onChange={onTitleChange}
-                isClearable={false}
+                onChange={(e) => onTitleChange(e.target.value)}
+                placeholder="제목을 입력해주세요"
+                className="w-full border-b border-border bg-transparent py-3 text-lg font-medium outline-none placeholder:text-muted-foreground placeholder:font-normal"
             />
 
+            {/* 내용 — 배경 없는 textarea */}
             <Textarea
                 value={content}
                 onChange={(e) => onContentChange(e.target.value)}
                 placeholder="내용을 작성해주세요"
-                className="bg-gray-100 rounded-xl min-h-65 max-h-65 no-scrollbar border-none rounded-b-none"
+                className="min-h-60 max-h-80 resize-none border-0 border-b border-border rounded-none bg-transparent px-0 text-base shadow-none focus-visible:ring-0 no-scrollbar dark:bg-transparent"
             />
 
-            <div className="flex gap-2.5 px-4 py-3 rounded-b-xl bg-gray-200 -mt-4">
-                <button
-                    type="button"
-                    className="flex items-center gap-0.5 cursor-pointer text-sm text-muted-foreground"
-                    onClick={onPhotoClick}
-                >
-                    <Image size={22} />
-                    <span>사진</span>
-                </button>
-                <button
-                    type="button"
-                    className="flex items-center gap-0.5 cursor-pointer text-sm text-muted-foreground"
-                    onClick={onPlaceClick}
-                >
-                    <MapPin size={22} />
-                    <span>장소</span>
-                </button>
-                <button
-                    type="button"
-                    className="flex items-center gap-0.5 cursor-pointer text-sm text-muted-foreground"
-                    onClick={onPollClick}
-                >
-                    <Vote size={22} />
-                    <span>투표</span>
-                </button>
+            {/* 첨부 도구 — 구분선 + 아웃라인 칩으로 재배치 */}
+            <div className="flex items-center border-border border-b pb-2">
+                <Button type="button" variant="ghost" size="sm" className="flex gap-1 px-1.5 rounded-lg cursor-pointer" onClick={onPhotoClick}>
+                    <Image className="size-4" /> 사진
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="flex gap-1 px-1.5 rounded-lg cursor-pointer" onClick={onPlaceClick}>
+                    <MapPin className="size-4" /> 장소
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="flex gap-1 px-1.5 rounded-lg cursor-pointer" onClick={onPollClick}>
+                    <Vote className="size-4" /> 투표
+                </Button>
             </div>
         </div>
     );

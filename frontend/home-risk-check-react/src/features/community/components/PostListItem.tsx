@@ -13,7 +13,7 @@ export function PostListItem({ post }: PostListItemProps) {
         <Link to={ROUTES.communityDetail(post.id)}>
             <div className="flex gap-4 pb-4">
                 <div className="flex flex-1 flex-col gap-2">
-                    <Badge variant="secondary" className="rounded-sm text-gray-700">
+                    <Badge variant="secondary" className="rounded-md text-muted-foreground">
                         {post.category}
                     </Badge>
                     <h3 className="line-clamp-1 text-ellipsis font-medium text-sm sm:text-base">
@@ -36,7 +36,7 @@ export function PostListItem({ post }: PostListItemProps) {
                         </div>
                     </div>
                 </div>
-                <div className="shrink-0 w-22 aspect-square self-start rounded-lg bg-gray-200">
+                <div className="shrink-0 w-22 aspect-square self-center-safe rounded-lg bg-muted">
                     {/* 게시글 이미지 영역*/}
                 </div>
             </div>

@@ -9,7 +9,7 @@ import {Button} from "@/components/ui/button.tsx";
 
 export default function CommunityDetailPage() {
     const { postId } = useParams<{ postId: string }>()
-    const { data: flatComments = [] } = useComments(postId)
+    const { data: flatComments = [], isLoading: isCommentsLoading } = useComments(postId)
     const comments = useMemo(() => buildCommentTree(flatComments), [flatComments])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const replyRef = useRef<HTMLTextAreaElement>(null)
@@ -28,6 +28,10 @@ export default function CommunityDetailPage() {
     return (
         <>
             <CommunityPostDetail onCommentClick={focusTextarea} />
+            {isCommentsLoading ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">댓글을 불러오는 중…</p>
+            ) : (
+            <>
             {showComposer ? (
                 <CommentComposer textareaRef={textareaRef} />
             ) : (
@@ -38,7 +42,7 @@ export default function CommunityDetailPage() {
                     </p>
 
                     <Button
-                        className="mt-2 rounded-xl cursor-pointer"
+                        className="mt-2 rounded-lg cursor-pointer"
                         onClick={() => setIsComposerOpen(true)}
                     >
                         댓글 작성하기
@@ -53,6 +57,8 @@ export default function CommunityDetailPage() {
                     setOpenReplyId(prev => (prev === commentId ? null : commentId));
                 }}
             />
+            </>
+            )}
         </>
     )
 }

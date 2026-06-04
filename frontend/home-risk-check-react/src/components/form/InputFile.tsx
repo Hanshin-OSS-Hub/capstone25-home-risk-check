@@ -42,19 +42,19 @@ const InputFile = ({label, placeholder, fileIssueUrl, files, onValueChange}: Fil
             multiple
         >
             <div className="flex items-center justify-between">
-                <span className="font-medium text-xs">{label}</span>
+                <span className="font-medium text-sm">{label}</span>
                 {fileIssueUrl && (
                     <a
                         href={fileIssueUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs hover:underline"
+                        className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                     >
                         발급 바로가기
                     </a>
                 )}
             </div>
-            <FileUploadDropzone className="bg-gray-100 py-4 rounded-xl">
+            <FileUploadDropzone className="bg-muted py-4 rounded-lg border-transparent">
                 <div className="flex flex-col items-center gap-1 text-center text-muted-foreground">
                     <Upload/>
                     <p className="text-sm font-medium">파일 업로드</p>
@@ -65,17 +65,17 @@ const InputFile = ({label, placeholder, fileIssueUrl, files, onValueChange}: Fil
             </FileUploadDropzone>
             <FileUploadList>
                 {files.map((file, index) => (
-                    <FileUploadItem key={index} value={file} className="bg-gray-100 border-none rounded-xl">
+                    <FileUploadItem key={index} value={file} className="bg-muted border-none rounded-lg">
                         <FileUploadItemMetadata />
                         <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="size-7 cursor-pointer hover:bg-gray-200" onClick={() => handlePreview(file)}>
+                            <Button variant="ghost" size="icon" className="size-7 cursor-pointer hover:bg-muted-foreground/10" onClick={() => handlePreview(file)}>
                                 <Eye className="size-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="size-7 cursor-pointer hover:bg-gray-200" onClick={() => handleDownload(file)}>
+                            <Button variant="ghost" size="icon" className="size-7 cursor-pointer hover:bg-muted-foreground/10" onClick={() => handleDownload(file)}>
                                 <Download className="size-4" />
                             </Button>
                             <FileUploadItemDelete asChild>
-                                <Button variant="ghost" size="icon" className="size-7 cursor-pointer hover:bg-gray-200">
+                                <Button variant="ghost" size="icon" className="size-7 cursor-pointer hover:bg-muted-foreground/10">
                                     <X className="size-4" />
                                 </Button>
                             </FileUploadItemDelete>

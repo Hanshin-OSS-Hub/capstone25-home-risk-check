@@ -16,7 +16,7 @@ interface SignupStore {
     reset: () => void
 }
 
-export const signupStore = create<SignupStore>((set) => ({
+export const useSignupStore = create<SignupStore>((set) => ({
     nickname: '',
     email: '',
     password: '',

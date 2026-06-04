@@ -63,7 +63,7 @@ const HalfPie = (props: PieProps) => (
     />
 );
 
-export default function PieChartWithNeedle({score, isAnimationActive = false }: { score:number, isAnimationActive?: boolean }) {
+export default function GaugeChart({score, isAnimationActive = false }: { score:number, isAnimationActive?: boolean }) {
     return (
         <PieChart width={210} height={112}>
             <HalfPie isAnimationActive={isAnimationActive} />

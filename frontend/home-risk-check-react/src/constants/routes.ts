@@ -17,6 +17,7 @@ export const ROUTES = {
     communityNew: '/community/new',
     communityPollNew: '/community/poll/new',
     placeSearch: '/place-search',
+    mypage: '/mypage',
 } as const
 
 export const ROUTE_PATTERNS = {

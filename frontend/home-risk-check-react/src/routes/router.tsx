@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import RootLayout from '@/components/layouts/RootLayout'
 import AuthLayout from '@/components/layouts/AuthLayout'
 import { ROUTES, ROUTE_PATTERNS } from '@/constants/routes'
@@ -16,6 +16,7 @@ export const router = createBrowserRouter([
         element: <RootLayout />,
         children: [
             // 로그인 불필요
+            { path: ROUTES.home, element: <Navigate to={ROUTES.analysis} replace /> },
             { path: ROUTES.addressSearch, lazy: lazyPage(() => import('@/pages/AddressSearchPage')) },
             { path: ROUTE_PATTERNS.analysisResult, lazy: lazyPage(() => import('@/pages/AnalysisResultPage')) },
             { path: ROUTES.community, lazy: lazyPage(() => import('@/pages/CommunityMainPage')) },
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
             {
                 // element: <PrivateLayout/>,
                 children: [
+                    { path: ROUTES.mypage, lazy: lazyPage(() => import('@/pages/MyPage')) },
                     { path: ROUTES.analysis, lazy: lazyPage(() => import('@/pages/AnalysisPage')) },
                     { path: ROUTES.communityNew, lazy: lazyPage(() => import('@/pages/CommunityCreatePage')) },
                     { path: ROUTES.placeSearch, lazy: lazyPage(() => import('@/pages/PlaceSearchPage')) },
